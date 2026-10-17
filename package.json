@@ -1,0 +1,8 @@
+{
+  "name": "cuttrack-ai",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "CutTrack AI: Indian calorie and macro tracker PWA with Google Drive storage and Groq AI",
+  "engines": { "node": ">=20" }
+}
