@@ -1,5 +1,5 @@
 import { protectedPost, fail } from "./_lib.js";
-import { provider, transcribe } from "./_ai.js";
+import { withFallback, transcribe } from "./_ai.js";
 
 // Voice notes -> text. The phone sends the recording as base64.
 const EXT = { "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/aac": "m4a", "audio/webm": "webm", "audio/ogg": "ogg", "audio/mpeg": "mp3", "audio/wav": "wav" };
@@ -10,6 +10,6 @@ export default protectedPost(async (body) => {
   if (!b64) throw fail(400, "bad_request", "No audio");
   if (b64.length > 4_000_000) throw fail(413, "audio_too_long", "Recording too long");
   const type = String(body.type || "audio/mp4").split(";")[0];
-  const text = await transcribe(provider(), Buffer.from(b64, "base64"), type, `voice.${EXT[type] || "m4a"}`, HINT);
-  return { text };
+  const buf = Buffer.from(b64, "base64");
+  return withFallback(async (p) => ({ text: await transcribe(p, buf, type, `voice.${EXT[type] || "m4a"}`, HINT) }));
 });

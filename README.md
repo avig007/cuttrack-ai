@@ -8,9 +8,9 @@ iPhone (CutTrack app)
    ▼
 Your Vercel server (free)  ── holds your secrets ──┐
    ├─ /api/drive       →  Google Drive   (stores your data, no AI)
-   ├─ /api/ai          →  OpenAI         (reads meals, photos, coach)
-   └─ /api/transcribe  →  OpenAI         (voice notes)
-                          Groq is an optional backup
+   ├─ /api/ai          →  OpenAI → Gemini → Groq   (reads meals, photos, coach)
+   └─ /api/transcribe  →  OpenAI → Gemini → Groq   (voice notes)
+                          if one runs out of credit or fails, the next takes over
 ```
 
 **What lands in your Drive**
@@ -26,7 +26,7 @@ My Drive/
 
 CutTrack can only see files it created. It cannot read anything else in your Drive.
 
-**Cost:** Vercel Hobby and Google Drive are free. OpenAI is pay-as-you-go; `gpt-6-luna` costs $0.10 per million input tokens, so a month of logging is typically a few rupees.
+**Cost:** Vercel Hobby and Google Drive are free. OpenAI is pay-as-you-go; `gpt-6-luna` costs $0.10 per million input tokens, so a month of logging typically costs a few rupees. Gemini and Groq take over only when OpenAI can't answer.
 
 ---
 
@@ -39,14 +39,15 @@ You need:
 - a Google account (avijeetgupta02@gmail.com)
 - about 30 minutes
 
-> **Your OpenAI key goes in Vercel, not GitHub.** A GitHub repository secret is only readable by GitHub Actions; the running app on Vercel can't see it. Paste the key into Vercel in step 4.
+> **AI keys live in GitHub secrets.** The running app on Vercel can't read GitHub secrets directly, so the included **Sync AI keys to Vercel** action copies them across. It needs one extra secret, `VERCEL_TOKEN` (step 4b).
 
 ---
 
-## Step 1 — Get an OpenAI API key
+## Step 1 — AI keys (already done)
 
-1. Go to **platform.openai.com → API keys → Create new secret key**, name it `CutTrack`, and copy it (starts with `sk-`).
-2. Open **Billing** and add a small amount of credit (the API doesn't use your ChatGPT subscription).
+`OPENAI_API_KEY` and `GEMINI_API_KEY` are in the repository's GitHub secrets. Add `GROQ_API_KEY` there whenever you have it, then run the sync action (step 4b).
+
+OpenAI bills API use separately from ChatGPT: add credit at **platform.openai.com → Billing**.
 
 ## Step 2 — Put the code on GitHub
 
@@ -89,7 +90,6 @@ Check that the repo shows an `api` folder at the top level, not a `cuttrack-app`
 
    | Name | Value |
    |---|---|
-   | `OPENAI_API_KEY` | your `sk-…` key |
    | `GOOGLE_CLIENT_ID` | from step 3.6 |
    | `GOOGLE_CLIENT_SECRET` | from step 3.6 |
    | `ALLOWED_EMAIL` | `avijeetgupta02@gmail.com` |
@@ -97,6 +97,15 @@ Check that the repo shows an `api` folder at the top level, not a `cuttrack-app`
 
    For `SESSION_SECRET`, use a password generator, or run `openssl rand -base64 36` on a Mac. Don't reuse a real password.
 5. Click **Deploy**. When it finishes, copy your address, for example `https://cuttrack-ai-xyz.vercel.app`.
+
+## Step 4b — Let GitHub pass the AI keys to Vercel
+
+1. Go to **vercel.com/account/tokens** → **Create Token**. Name it `cuttrack-github`, scope it to your account, choose an expiry, and copy it.
+2. On GitHub: **cuttrack-ai → Settings → Secrets and variables → Actions → New repository secret**. Name `VERCEL_TOKEN`, paste the token, then click **Add secret**.
+3. Open the **Actions** tab → **Sync AI keys to Vercel** → **Run workflow** → **Run workflow**.
+4. When it shows a green tick, the keys are in Vercel and the app has redeployed.
+
+Run it again whenever you add or change an AI key, for example when you add `GROQ_API_KEY`.
 
 ## Step 5 — Connect the two
 
@@ -138,13 +147,15 @@ AI is used only for:
 - voice notes
 - the coach
 
-| Feature | OpenAI model (change in Vercel settings) |
-|---|---|
-| Typed and spoken meals, coach | `gpt-6-luna` (`OPENAI_TEXT_MODEL`) |
-| Photos and labels | `gpt-6-luna` (`OPENAI_VISION_MODEL`) |
-| Voice | `gpt-4o-mini-transcribe` (`OPENAI_STT_MODEL`) |
+Each request tries OpenAI first, then Gemini, then Groq. A service that runs out of credit or rejects its key is skipped for 30 minutes, then tried again.
 
-**Backup provider:** add `GROQ_API_KEY` in Vercel too. It's used automatically if `OPENAI_API_KEY` is removed, or always if you set `AI_PROVIDER=groq`.
+| Feature | OpenAI | Gemini | Groq |
+|---|---|---|---|
+| Typed and spoken meals, coach | `gpt-6-luna` | `gemini-3.5-flash-lite` | `llama-3.3-70b-versatile` |
+| Photos and labels | `gpt-6-luna` | `gemini-3.5-flash-lite` | `qwen/qwen3.8-27b` |
+| Voice | `gpt-4o-mini-transcribe` | `gemini-3.5-flash-lite` | `whisper-large-v3-turbo` |
+
+To change a model, add a Vercel variable such as `OPENAI_TEXT_MODEL` or `GEMINI_VISION_MODEL` (the full list is in `.env.example`), then redeploy. To change the order, set `AI_ORDER`, for example `gemini,openai,groq`.
 
 ## Troubleshooting
 
@@ -152,11 +163,12 @@ AI is used only for:
 |---|---|
 | `redirect_uri_mismatch` from Google | The redirect URI in Google Cloud must exactly match `APP_URL` + `/api/auth/callback`. |
 | "Server isn't fully set up" | One of the environment variables is missing. Add it, then redeploy. |
-| "AI key … invalid" | Check `OPENAI_API_KEY` in Vercel, then redeploy. |
-| "Out of credit" | Add credit at platform.openai.com → Billing. |
+| "No working AI key" | Check the AI secrets in GitHub, then run **Sync AI keys to Vercel**. |
+| "Every AI service is out of credit" | Top up OpenAI or Gemini, or add a Groq key and run the sync action. |
+| Sync action fails | Check `VERCEL_TOKEN` is set and hasn't expired. The Vercel project must be named `cuttrack-ai`. |
 | Signed out every week | The Google app is still in Testing. Publish it (step 3.5), then sign in again. |
 | "Wrong account" | Sign in with the account set in `ALLOWED_EMAIL`. |
-| Photos fail but text works | Set `OPENAI_VISION_MODEL` to a current OpenAI vision model, then redeploy. |
+| Photos fail but text works | A vision model may have been retired. Set `OPENAI_VISION_MODEL` or `GEMINI_VISION_MODEL` in Vercel, then redeploy. |
 | Label says "Drive ⚠" | Open Profile to see the reason. Entries are never lost; they stay on the phone and upload on the next change. |
 
 ## Moving from the claude.ai version

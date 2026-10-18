@@ -475,7 +475,7 @@ function makeSample(){
   return chat;
 }
 
-const AI_ERR={not_signed_in:"Sign in with Google (Profile tab) to use AI. Local food search still works.",offline:"You're offline. AI needs internet; local food search still works.",ai_key:"The AI key on the server is missing or invalid. Check OPENAI_API_KEY in Vercel.",ai_quota:"Your OpenAI account is out of credit. Add credit at platform.openai.com › Billing.",audio_too_long:"That recording was too long. Keep voice notes under about a minute.",not_configured:"The server isn't fully set up yet. Check the Vercel environment variables.",not_granted:"AI access wasn't allowed for this page. Local food search still works.",sampling_disabled:"AI isn't available on this account.",rate_limited:"Too many AI requests right now. Try again in a minute.",image_rejected:"That image couldn't be read. Try a JPEG or PNG under 20 MB.",images_unavailable:"Photo analysis isn't available in this view.",invalid_json:"The AI reply came back garbled. Try again.",refused:"The AI declined that request. Try rewording it.",session_expired:"Sign in to Claude again to use AI features."};
+const AI_ERR={not_signed_in:"Sign in with Google (Profile tab) to use AI. Local food search still works.",offline:"You're offline. AI needs internet; local food search still works.",ai_key:"No working AI key on the server. Check the AI keys in GitHub secrets, then run the Sync AI keys to Vercel action.",ai_quota:"Every AI service is out of credit right now. Top up OpenAI or Gemini, or add a Groq key.",audio_too_long:"That recording was too long. Keep voice notes under about a minute.",not_configured:"The server isn't fully set up yet. Check the Vercel environment variables.",not_granted:"AI access wasn't allowed for this page. Local food search still works.",sampling_disabled:"AI isn't available on this account.",rate_limited:"Too many AI requests right now. Try again in a minute.",image_rejected:"That image couldn't be read. Try a JPEG or PNG under 20 MB.",images_unavailable:"Photo analysis isn't available in this view.",invalid_json:"The AI reply came back garbled. Try again.",refused:"The AI declined that request. Try rewording it.",session_expired:"Sign in to Claude again to use AI features."};
 const aiMsg=e=>AI_ERR[e?.code]||"Couldn't reach the AI just now. Try again in a moment.";
 
 function catalog(){
@@ -871,7 +871,7 @@ function viewProfile(){
   </section>
   <section class="card stack small"><h2 style="font-size:1.25rem">Install & privacy</h2>
     <p style="margin:0">To install on iPhone: open this site in Safari, tap <b>Share</b>, then <b>Add to Home Screen</b>. Then open it from the Home Screen and sign in there; the installed app keeps its own sign-in.</p>
-    <p style="margin:0" class="muted">Photos and voice notes are sent to OpenAI for analysis only and are never stored. Your log lives on this phone and in your own Google Drive; CutTrack can only see files it created there.</p>
+    <p style="margin:0" class="muted">Photos and voice notes are sent to OpenAI (or Gemini or Groq as backups) for analysis only and are never stored. Your log lives on this phone and in your own Google Drive; CutTrack can only see files it created there.</p>
     <p style="margin:0" class="muted">Values are estimates for general tracking, not medical advice.</p>
     <button class="btn danger" data-act="wipe">${wipeArm?"Tap again to delete everything":"Delete all my data"}</button>
   </section></div>`;
