@@ -1,24 +1,7 @@
-import { env, protectedPost, fail } from "./_lib.js";
+import { protectedPost, fail } from "./_lib.js";
+import { provider, chatCompletion } from "./_ai.js";
 
-// Groq proxy. Your GROQ_API_KEY lives only in Vercel's environment variables.
-const GROQ = "https://api.groq.com/openai/v1/chat/completions";
-const TEXT_MODEL = () => env("GROQ_TEXT_MODEL", "llama-3.3-70b-versatile");
-const VISION_MODEL = () => env("GROQ_VISION_MODEL", "qwen/qwen3.8-27b");
-
-async function groq(body) {
-  if (!env("GROQ_API_KEY")) throw fail(500, "groq_key", "GROQ_API_KEY is not set");
-  const r = await fetch(GROQ, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${env("GROQ_API_KEY")}`, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  const j = await r.json().catch(() => ({}));
-  if (r.status === 401 || r.status === 403) throw fail(500, "groq_key", "Groq rejected the API key");
-  if (r.status === 429) throw fail(429, "rate_limited", j.error?.message || "Groq rate limit");
-  if (!r.ok) throw Object.assign(fail(502, "upstream_error", j.error?.message || `Groq ${r.status}`), { groqStatus: r.status });
-  return j.choices?.[0]?.message?.content || "";
-}
-
+// AI proxy. Your API key lives only in Vercel's environment variables, never on the phone.
 const stripThink = (t) => String(t || "").replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
 
 function parseJson(text) {
@@ -32,23 +15,25 @@ function parseJson(text) {
 }
 
 async function jsonCall(prompt, image) {
-  const user = image
-    ? [{ type: "text", text: prompt }, { type: "image_url", image_url: { url: image } }]
-    : prompt;
+  const p = provider();
+  const user = image ? [{ type: "text", text: prompt }, { type: "image_url", image_url: { url: image } }] : prompt;
   const base = {
-    model: image ? VISION_MODEL() : TEXT_MODEL(),
+    model: image ? p.visionModel() : p.textModel(),
     messages: [
       { role: "system", content: "You are a precise nutrition data extractor. Reply with one valid JSON object and nothing else." },
       { role: "user", content: user },
     ],
-    temperature: 0.2,
-    max_completion_tokens: 2048,
+    max_completion_tokens: 4000,
+    ...p.extra("json"),
   };
   try {
-    return parseJson(await groq({ ...base, response_format: { type: "json_object" } }));
+    return parseJson(await chatCompletion(p, { ...base, response_format: { type: "json_object" } }));
   } catch (e) {
-    // Some models reject json mode; retry once without it.
-    if (e.groqStatus === 400 || e.code === "invalid_json") return parseJson(await groq(base));
+    // Some models reject JSON mode or a parameter; retry once with the plainest request.
+    if (e.aiStatus === 400 || e.code === "invalid_json") {
+      const { reasoning_effort, temperature, ...plain } = base;
+      return parseJson(await chatCompletion(p, plain));
+    }
     throw e;
   }
 }
@@ -62,12 +47,21 @@ export default protectedPost(async (body) => {
     return { data: await jsonCall(prompt, image) };
   }
   if (body.mode === "chat") {
+    const p = provider();
     const messages = (Array.isArray(body.messages) ? body.messages : [])
       .filter((m) => m && ["system", "user", "assistant"].includes(m.role) && typeof m.content === "string")
       .slice(-14)
       .map((m) => ({ role: m.role, content: m.content.slice(0, 20000) }));
     if (!messages.length) throw fail(400, "bad_request", "No messages");
-    const text = stripThink(await groq({ model: TEXT_MODEL(), messages, temperature: 0.5, max_completion_tokens: 700 }));
+    const req = { model: p.textModel(), messages, max_completion_tokens: 1500, ...p.extra("chat") };
+    let text;
+    try { text = await chatCompletion(p, req); }
+    catch (e) {
+      if (e.aiStatus !== 400) throw e;
+      const { reasoning_effort, temperature, ...plain } = req;
+      text = await chatCompletion(p, plain);
+    }
+    text = stripThink(text);
     if (!text) throw fail(502, "empty_completion", "Empty reply");
     return { text };
   }

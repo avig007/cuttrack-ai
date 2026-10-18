@@ -8,8 +8,9 @@ iPhone (CutTrack app)
    ▼
 Your Vercel server (free)  ── holds your secrets ──┐
    ├─ /api/drive       →  Google Drive   (stores your data, no AI)
-   ├─ /api/ai          →  Groq           (reads meals, photos, coach)
-   └─ /api/transcribe  →  Groq Whisper   (voice notes)
+   ├─ /api/ai          →  OpenAI         (reads meals, photos, coach)
+   └─ /api/transcribe  →  OpenAI         (voice notes)
+                          Groq is an optional backup
 ```
 
 **What lands in your Drive**
@@ -25,7 +26,7 @@ My Drive/
 
 CutTrack can only see files it created. It cannot read anything else in your Drive.
 
-**Cost:** Vercel Hobby, Google Drive and Groq's free tier are all free for one person's use.
+**Cost:** Vercel Hobby and Google Drive are free. OpenAI is pay-as-you-go; `gpt-6-luna` costs $0.10 per million input tokens, so a month of logging is typically a few rupees.
 
 ---
 
@@ -38,15 +39,14 @@ You need:
 - a Google account (avijeetgupta02@gmail.com)
 - about 30 minutes
 
-> **Your Groq key:** don't send it to anyone, including in a chat. You'll paste it straight into Vercel in step 4, where it stays on the server.
+> **Your OpenAI key goes in Vercel, not GitHub.** A GitHub repository secret is only readable by GitHub Actions; the running app on Vercel can't see it. Paste the key into Vercel in step 4.
 
 ---
 
-## Step 1 — Get a Groq API key
+## Step 1 — Get an OpenAI API key
 
-1. Go to **console.groq.com** and sign in.
-2. Open **API Keys** → **Create API Key** and name it `CutTrack`.
-3. Copy the key, which starts with `gsk_`, into a note for now. Groq only shows it once.
+1. Go to **platform.openai.com → API keys → Create new secret key**, name it `CutTrack`, and copy it (starts with `sk-`).
+2. Open **Billing** and add a small amount of credit (the API doesn't use your ChatGPT subscription).
 
 ## Step 2 — Put the code on GitHub
 
@@ -89,7 +89,7 @@ Check that the repo shows an `api` folder at the top level, not a `cuttrack-app`
 
    | Name | Value |
    |---|---|
-   | `GROQ_API_KEY` | your `gsk_…` key |
+   | `OPENAI_API_KEY` | your `sk-…` key |
    | `GOOGLE_CLIENT_ID` | from step 3.6 |
    | `GOOGLE_CLIENT_SECRET` | from step 3.6 |
    | `ALLOWED_EMAIL` | `avijeetgupta02@gmail.com` |
@@ -138,13 +138,13 @@ AI is used only for:
 - voice notes
 - the coach
 
-| Feature | Groq model (change in Vercel settings) |
+| Feature | OpenAI model (change in Vercel settings) |
 |---|---|
-| Typed and spoken meals, coach | `llama-3.3-70b-versatile` (`GROQ_TEXT_MODEL`) |
-| Photos and labels | `qwen/qwen3.8-27b` (`GROQ_VISION_MODEL`) |
-| Voice | `whisper-large-v3-turbo` (`GROQ_STT_MODEL`) |
+| Typed and spoken meals, coach | `gpt-6-luna` (`OPENAI_TEXT_MODEL`) |
+| Photos and labels | `gpt-6-luna` (`OPENAI_VISION_MODEL`) |
+| Voice | `gpt-4o-mini-transcribe` (`OPENAI_STT_MODEL`) |
 
-If Groq retires a model, add the matching variable in Vercel with a current model from console.groq.com/docs/models, then redeploy.
+**Backup provider:** add `GROQ_API_KEY` in Vercel too. It's used automatically if `OPENAI_API_KEY` is removed, or always if you set `AI_PROVIDER=groq`.
 
 ## Troubleshooting
 
@@ -152,10 +152,11 @@ If Groq retires a model, add the matching variable in Vercel with a current mode
 |---|---|
 | `redirect_uri_mismatch` from Google | The redirect URI in Google Cloud must exactly match `APP_URL` + `/api/auth/callback`. |
 | "Server isn't fully set up" | One of the environment variables is missing. Add it, then redeploy. |
-| "Groq API key … invalid" | Check `GROQ_API_KEY` in Vercel, then redeploy. |
+| "AI key … invalid" | Check `OPENAI_API_KEY` in Vercel, then redeploy. |
+| "Out of credit" | Add credit at platform.openai.com → Billing. |
 | Signed out every week | The Google app is still in Testing. Publish it (step 3.5), then sign in again. |
 | "Wrong account" | Sign in with the account set in `ALLOWED_EMAIL`. |
-| Photos fail but text works | The vision model may have changed. Set `GROQ_VISION_MODEL` to a current Groq vision model. |
+| Photos fail but text works | Set `OPENAI_VISION_MODEL` to a current OpenAI vision model, then redeploy. |
 | Label says "Drive ⚠" | Open Profile to see the reason. Entries are never lost; they stay on the phone and upload on the next change. |
 
 ## Moving from the claude.ai version
