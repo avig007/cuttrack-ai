@@ -405,8 +405,8 @@ function gramsOf(it){if(it.unit==="g"||it.unit==="ml")return +it.qty||0;return (
 function calc(it){const g=gramsOf(it),o=ZERO();for(const k in o)o[k]=r1((it.per100?.[k]||0)*g/100);o.kcal=r0(o.kcal);return o;}
 
 /* ---------- State & storage ---------- */
-const DEFAULT_PROFILE={name:"Avijeet",age:26,sex:"male",height:174,weight:73,targetWeight:68,activity:"moderate",training:4,goal:"lose",rate:0.5,
-  targets:{kcal:1900,p:155,c:200,f:55},onboarded:false};
+const DEFAULT_PROFILE={name:"",age:25,sex:"female",height:160,weight:60,targetWeight:56,activity:"moderate",training:3,goal:"lose",rate:0.5,
+  targets:{kcal:1600,p:110,c:170,f:50},onboarded:false};
 let S={profile:structuredClone(DEFAULT_PROFILE),custom:[],weights:[],days:{}};
 const LS="cuttrack.v1",LS_DIRTY="cuttrack.dirty",LS_SESS="cuttrack.session",LS_EMAIL="cuttrack.email",LS_FOLDER="cuttrack.folder";
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
@@ -1557,16 +1557,27 @@ function openCustomFood(){
     Store.saveMeta();closeSheet();render();toast("Saved to My foods");};
 }
 function openOnboarding(){
-  const p=S.profile,t=p.targets;
+  const p=S.profile;
+  const sel=(id,opts,val)=>`<select id="${id}">${opts.map(([v,l])=>`<option value="${v}" ${String(v)===String(val)?"selected":""}>${l}</option>`).join("")}</select>`;
   const sh=sheet(`<h2 style="font-size:1.6rem">Welcome to CutTrack</h2>
-  <p style="margin:0">Tell it what you ate, or snap a photo. It finds the food, does the maths and keeps your day's totals.</p>
-  <div class="card small"><div class="label">Starting profile</div><div style="margin-top:6px" class="num">${esc(p.name)} · ${p.height} cm · ${p.weight} kg → ${p.targetWeight} kg (fat loss)</div>
-  <div class="num" style="margin-top:4px"><b>${t.kcal} kcal</b> · ${t.p} g protein · ${t.c} g carbs · ${t.f} g fat</div></div>
-  <p class="tiny muted" style="margin:0">Estimates for general tracking, not medical advice.</p>
-  <div class="row"><button class="btn primary" style="flex:1" id="obGo">Start tracking</button><button class="btn" id="obEdit">Edit profile</button></div>`);
-  const done=()=>{S.profile.onboarded=true;Store.saveMeta();closeSheet();};
-  sh.querySelector("#obGo").onclick=done;
-  sh.querySelector("#obEdit").onclick=()=>{done();TAB="profile";document.querySelectorAll("nav.tabs [data-tab]").forEach(x=>x.classList.toggle("on",x.dataset.tab==="profile"));render();};
+  <p style="margin:0">Tell it what you ate, or snap a photo. It finds the food, does the maths and keeps your day's totals. First, a few details to set your targets.</p>
+  <div class="grid2">
+    <div class="field" style="grid-column:1/-1"><label class="label" for="obName">Your name</label><input type="text" id="obName" value="${esc(p.name)}" placeholder="First name" autocomplete="given-name"></div>
+    <div class="field"><label class="label" for="obSex">Sex</label>${sel("obSex",[["female","Female"],["male","Male"]],p.sex)}</div>
+    <div class="field"><label class="label" for="obAge">Age</label><input type="number" inputmode="numeric" id="obAge" value="${p.age}"></div>
+    <div class="field"><label class="label" for="obH">Height (cm)</label><input type="number" inputmode="decimal" id="obH" value="${p.height}"></div>
+    <div class="field"><label class="label" for="obW">Weight (kg)</label><input type="number" inputmode="decimal" step="0.1" id="obW" value="${p.weight}"></div>
+    <div class="field"><label class="label" for="obTW">Target weight (kg)</label><input type="number" inputmode="decimal" step="0.1" id="obTW" value="${p.targetWeight}"></div>
+    <div class="field"><label class="label" for="obGoal">Goal</label>${sel("obGoal",[["lose","Lose fat"],["maintain","Maintain"],["gain","Gain"]],p.goal)}</div>
+    <div class="field" style="grid-column:1/-1"><label class="label" for="obAct">Activity</label>${sel("obAct",[["sedentary","Desk job, little walking"],["light","Light: some walking"],["moderate","Moderate: training 3–5×"],["active","Very active"]],p.activity)}</div>
+  </div>
+  <div class="callout small num" id="obTargets"></div>
+  <p class="tiny muted" style="margin:0">Estimates for general tracking, not medical advice. You can change everything later in Profile.</p>
+  <button class="btn primary block" id="obGo">Start tracking</button>`);
+  const read=()=>({...S.profile,name:sh.querySelector("#obName").value.trim(),sex:sh.querySelector("#obSex").value,age:+sh.querySelector("#obAge").value||25,height:+sh.querySelector("#obH").value||160,weight:+sh.querySelector("#obW").value||60,targetWeight:+sh.querySelector("#obTW").value||60,goal:sh.querySelector("#obGoal").value,activity:sh.querySelector("#obAct").value});
+  const show=()=>{const t=suggested(read());sh.querySelector("#obTargets").innerHTML=`Your daily targets: <b>${t.kcal} kcal</b> · ${t.p} g protein · ${t.c} g carbs · ${t.f} g fat`;};
+  sh.oninput=show;sh.onchange=show;show();
+  sh.querySelector("#obGo").onclick=()=>{const p2=read(),t=suggested(p2);S.profile={...p2,targets:{kcal:t.kcal,p:t.p,c:t.c,f:t.f},onboarded:true};Store.saveMeta();closeSheet();render();toast("You're set. Tap + to log your first food.");};
 }
 
 Store.init();

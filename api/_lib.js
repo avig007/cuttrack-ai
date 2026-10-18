@@ -3,6 +3,10 @@ import crypto from "node:crypto";
 
 export const env = (k, d = "") => (process.env[k] ?? d).trim();
 
+// ALLOWED_EMAIL can hold one address or several separated by commas. Empty = anyone.
+export const allowedEmails = () => env("ALLOWED_EMAIL").toLowerCase().split(/[\s,;]+/).filter(Boolean);
+export const emailAllowed = (email) => { const list = allowedEmails(); return !list.length || list.includes(String(email || "").toLowerCase()); };
+
 function key() {
   const secret = env("SESSION_SECRET");
   if (secret.length < 16) throw Object.assign(new Error("SESSION_SECRET must be set (at least 16 characters)"), { status: 500, code: "not_configured" });
@@ -37,8 +41,7 @@ export function session(req) {
   const t = h.startsWith("Bearer ") ? h.slice(7) : "";
   const s = t ? unseal(t) : null;
   if (!s?.rt) return null;
-  const allowed = env("ALLOWED_EMAIL").toLowerCase();
-  if (allowed && String(s.email || "").toLowerCase() !== allowed) return null;
+  if (!emailAllowed(s.email)) return null;
   return s;
 }
 

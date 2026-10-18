@@ -1,4 +1,4 @@
-import { env, appUrl, sign, send } from "../_lib.js";
+import { env, appUrl, sign, send, allowedEmails } from "../_lib.js";
 
 // Sends you to Google to approve CutTrack. Scope drive.file means the app can only
 // see and change files it created itself, nothing else in your Drive.
@@ -23,7 +23,8 @@ export default function handler(req, res) {
     include_granted_scopes: "true",
     state,
   });
-  if (env("ALLOWED_EMAIL")) p.set("login_hint", env("ALLOWED_EMAIL"));
+  if (allowedEmails().length === 1) p.set("login_hint", allowedEmails()[0]);
+  p.set("prompt", "consent select_account");
   res.statusCode = 302;
   res.setHeader("Location", `https://accounts.google.com/o/oauth2/v2/auth?${p}`);
   res.setHeader("Cache-Control", "no-store");

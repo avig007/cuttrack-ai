@@ -1,4 +1,4 @@
-import { env, appUrl, sign, seal } from "../_lib.js";
+import { env, appUrl, sign, seal, emailAllowed } from "../_lib.js";
 
 const escHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
@@ -49,9 +49,8 @@ export default async function handler(req, res) {
 
   let email = "";
   try { email = JSON.parse(Buffer.from(j.id_token.split(".")[1], "base64url").toString("utf8")).email || ""; } catch {}
-  const allowed = env("ALLOWED_EMAIL").toLowerCase();
-  if (allowed && email.toLowerCase() !== allowed) {
-    return page(res, 403, "Wrong account", `This CutTrack is set up for ${env("ALLOWED_EMAIL")}. Sign in with that Google account.`);
+  if (!emailAllowed(email)) {
+    return page(res, 403, "Not on the list", `${email || "This Google account"} isn't allowed to use this CutTrack yet. Ask the owner to add it, then sign in again.`);
   }
 
   const token = seal({ rt: j.refresh_token, email, iat: Date.now() });
