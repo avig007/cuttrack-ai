@@ -349,6 +349,8 @@ F("lime_soda","Fresh lime soda (sweet)","lime soda,nimbu soda,fresh lime soda,ni
 F("orange_juice","Orange juice","orange juice,juice","Drinks",[45,0.7,10.4,0.2,0.2,8.4],{glass:250,ml:1},"glass");
 F("coconut_water","Coconut water","coconut water,nariyal pani","Drinks",[19,0.7,3.7,0.2,1.1,2.6],{glass:250,ml:1},"glass");
 F("mixed_nuts","Mixed nuts","mixed nuts,nuts,dry fruits","Nuts",[607,20,21,54,7,4],{serving:30,g:1},"serving");
+F("makhana","Roasted makhana (fox nuts)","makhana,fox nuts,phool makhana,lotus seeds","Snacks",[380,10,75,3,7,0.5],{serving:25,g:1},"serving");
+F("roasted_chana","Roasted chana","roasted chana,bhuna chana,roasted gram","Snacks",[369,22,58,5,17,1],{serving:30,g:1},"serving");
 F("protein_bar","Protein bar (generic)","protein bar","Protein",[380,30,35,13,8,5],{pack:60,g:1},"pack","Brands differ. Scan the wrapper's label for exact values.");
 
 /* Browse filters: category → foods in it (sub-filters) */
@@ -367,7 +369,7 @@ const FILTERS=[
   ["Fruits",["banana","apple","mango","guava","orange","papaya","pomegranate","watermelon","grapes"]],
   ["Veg & salad",["salad","sprouts","broccoli","spinach","potato","sweet_potato"]],
   ["Protein & supplements",["whey","protein_bar","greek_yogurt","egg_white","chicken_breast","soya","paneer","tofu"]],
-  ["Snacks & sweets",["chips","biscuit","samosa","peanuts","almonds","mixed_nuts","dark_chocolate","gulab_jamun","rasgulla","ladoo","kheer","ice_cream"]],
+  ["Snacks & sweets",["chips","biscuit","samosa","makhana","roasted_chana","peanuts","almonds","mixed_nuts","dark_chocolate","gulab_jamun","rasgulla","ladoo","kheer","ice_cream"]],
   ["Drinks",["chai","coffee","lassi","chaas","lime_soda","orange_juice","coconut_water","cola","milk_toned"]],
   ["Fats & extras",["ghee","oil","butter","peanut_butter","sugar","honey"]],
 ];
@@ -702,77 +704,160 @@ function quickAdd(e){
   undoToast(`Added ${shortQty(e)} ${shortName(e.name)} · ${r.kcal} kcal`,()=>{S.days[r.k]=dayEntries(r.k).filter(x=>!r.ids.includes(x.id));Store.saveDay(r.k);render();});
 }
 
-/* "Fill your meter": meals that fit what's left today, picked from the food database (no AI) */
+/* "Fill your meter": meals and snacks that fit what's left today, picked from the food database (no AI).
+   Tags: m=meal s=snack · v=veg e=egg n=non-veg · hp=high protein lc=low carb ind=Indian nc=no cooking */
 const COMBOS=[
-  ["Grilled chicken + salad",[["chicken_breast",150,"g"],["salad",1,"bowl"]]],
-  ["Chicken, rice & salad",[["chicken_breast",150,"g"],["rice",1,"bowl"],["salad",1,"bowl"]]],
-  ["Chicken, 2 rotis & sabzi",[["chicken_breast",150,"g"],["roti",2,"roti"],["sabzi",1,"bowl"]]],
-  ["Chicken curry + 2 rotis",[["chicken_curry",1,"bowl"],["roti",2,"roti"]]],
-  ["Chicken tikka",[["chicken_tikka",200,"g"]]],
-  ["Egg-white omelette + toast",[["egg_white",4,"piece"],["egg",1,"piece"],["bread_brown",2,"slice"]]],
-  ["3 boiled eggs",[["egg",3,"piece"]]],
-  ["Egg bhurji + 2 rotis",[["egg_bhurji",1,"plate"],["roti",2,"roti"]]],
-  ["Whey shake (with water)",[["whey",1,"scoop"]]],
-  ["Whey, milk & banana",[["whey",1,"scoop"],["milk_dt",1,"glass"],["banana",1,"piece"]]],
-  ["Greek yogurt + apple",[["greek_yogurt",1,"cup"],["apple",1,"piece"]]],
-  ["Paneer bhurji + roti",[["paneer_bhurji",1,"plate"],["roti",1,"roti"]]],
-  ["Dal, rice & curd",[["dal_tadka",1,"bowl"],["rice",1,"bowl"],["curd",1,"bowl"]]],
-  ["Rajma chawal",[["rajma",1,"bowl"],["rice",1,"bowl"]]],
-  ["Soya chunks + 2 rotis",[["soya",50,"g"],["roti",2,"roti"]]],
-  ["Tofu + broccoli",[["tofu",200,"g"],["broccoli",1,"bowl"]]],
-  ["Grilled fish + salad",[["fish",150,"g"],["salad",1,"bowl"]]],
-  ["3 idlis + sambar",[["idli",3,"piece"],["sambar",1,"bowl"]]],
-  ["Sprouts salad",[["sprouts",1,"bowl"]]],
-  ["Chana chaat",[["chana_chaat",1,"bowl"]]],
-  ["Curd + 10 almonds",[["curd",1,"bowl"],["almonds",10,"piece"]]],
-  ["Guava",[["guava",1,"piece"]]],
-  ["Chaas + cucumber salad",[["chaas",1,"glass"],["salad",1,"bowl"]]],
-  ["Glass of double-toned milk",[["milk_dt",1,"glass"]]],
+  ["Grilled chicken + salad",[["chicken_breast",150,"g"],["salad",1,"bowl"]],"m n hp lc"],
+  ["Chicken, rice & salad",[["chicken_breast",150,"g"],["rice",1,"bowl"],["salad",1,"bowl"]],"m n hp"],
+  ["Chicken, 2 rotis & sabzi",[["chicken_breast",150,"g"],["roti",2,"roti"],["sabzi",1,"bowl"]],"m n hp ind"],
+  ["Chicken curry + 2 rotis",[["chicken_curry",1,"bowl"],["roti",2,"roti"]],"m n ind"],
+  ["Chicken tikka",[["chicken_tikka",200,"g"]],"m n hp lc ind"],
+  ["Tandoori chicken + salad",[["tandoori_chicken",250,"g"],["salad",1,"bowl"]],"m n hp lc ind"],
+  ["Chicken thigh + brown rice",[["chicken_thigh",150,"g"],["brown_rice",1,"bowl"]],"m n hp"],
+  ["Chicken biryani + curd",[["chicken_biryani",1,"plate"],["curd",1,"bowl"]],"m n ind"],
+  ["Butter chicken + 1 roti",[["butter_chicken",1,"bowl"],["roti",1,"roti"]],"m n ind"],
+  ["3 seekh kebabs + salad",[["seekh",3,"piece"],["salad",1,"bowl"]],"m n hp lc ind"],
+  ["Chicken wrap",[["chicken_wrap",1,"piece"]],"m n"],
+  ["Grilled chicken sandwich",[["chicken_sandwich",1,"piece"]],"m n"],
+  ["Grilled fish + salad",[["fish",150,"g"],["salad",1,"bowl"]],"m n hp lc"],
+  ["Fish curry + rice",[["fish_curry",1,"bowl"],["rice",1,"bowl"]],"m n ind"],
+  ["Prawns + rice",[["prawns",150,"g"],["rice",1,"bowl"]],"m n hp"],
+  ["Egg curry + 2 rotis",[["egg_curry",1,"bowl"],["roti",2,"roti"]],"m e ind"],
+  ["Egg bhurji + 2 rotis",[["egg_bhurji",1,"plate"],["roti",2,"roti"]],"m e ind"],
+  ["Egg-white omelette + toast",[["egg_white",4,"piece"],["egg",1,"piece"],["bread_brown",2,"slice"]],"m e hp"],
+  ["3 eggs + 2 slices toast",[["egg",3,"piece"],["bread_brown",2,"slice"]],"m e"],
+  ["Paneer bhurji + roti",[["paneer_bhurji",1,"plate"],["roti",1,"roti"]],"m v ind"],
+  ["Paneer tikka + salad",[["paneer_tikka",150,"g"],["salad",1,"bowl"]],"m v hp lc ind"],
+  ["Palak paneer + 2 rotis",[["palak_paneer",1,"bowl"],["roti",2,"roti"]],"m v ind"],
+  ["Dal, rice & curd",[["dal_tadka",1,"bowl"],["rice",1,"bowl"],["curd",1,"bowl"]],"m v ind"],
+  ["Dal, 2 rotis & salad",[["dal_tadka",1,"bowl"],["roti",2,"roti"],["salad",1,"bowl"]],"m v ind"],
+  ["Rajma chawal",[["rajma",1,"bowl"],["rice",1,"bowl"]],"m v ind"],
+  ["Chole + 2 rotis",[["chole",1,"bowl"],["roti",2,"roti"]],"m v ind"],
+  ["Soya chunks + 2 rotis",[["soya",50,"g"],["roti",2,"roti"]],"m v hp ind"],
+  ["Tofu + broccoli",[["tofu",200,"g"],["broccoli",1,"bowl"]],"m v hp lc"],
+  ["3 idlis + sambar",[["idli",3,"piece"],["sambar",1,"bowl"]],"m v ind"],
+  ["Masala dosa + sambar",[["masala_dosa",1,"piece"],["sambar",1,"bowl"]],"m v ind"],
+  ["Poha + curd",[["poha",1,"plate"],["curd",1,"bowl"]],"m v ind"],
+  ["Khichdi + curd",[["khichdi",1,"bowl"],["curd",1,"bowl"]],"m v ind"],
+  ["Veg biryani + curd",[["veg_biryani",1,"plate"],["curd",1,"bowl"]],"m v ind"],
+  ["Oats with milk & banana",[["oats",40,"g"],["milk_dt",1,"glass"],["banana",1,"piece"]],"m v"],
+  ["Quinoa + chana chaat",[["quinoa",1,"bowl"],["chana_chaat",1,"bowl"]],"m v hp"],
+  ["Whey shake (with water)",[["whey",1,"scoop"]],"s v hp lc nc"],
+  ["Whey, milk & banana",[["whey",1,"scoop"],["milk_dt",1,"glass"],["banana",1,"piece"]],"s v hp nc"],
+  ["Whey + Greek yogurt",[["whey",1,"scoop"],["greek_yogurt",1,"cup"]],"s v hp lc nc"],
+  ["Greek yogurt + apple",[["greek_yogurt",1,"cup"],["apple",1,"piece"]],"s v hp nc"],
+  ["Greek yogurt",[["greek_yogurt",1,"cup"]],"s v hp lc nc"],
+  ["3 boiled eggs",[["egg",3,"piece"]],"s e hp lc"],
+  ["2 boiled eggs + apple",[["egg",2,"piece"],["apple",1,"piece"]],"s e"],
+  ["4 egg whites + toast",[["egg_white",4,"piece"],["bread_brown",1,"slice"]],"s e hp"],
+  ["Chicken breast (100 g)",[["chicken_breast",100,"g"]],"s n hp lc"],
+  ["Paneer cubes (50 g)",[["paneer",50,"g"]],"s v hp lc nc"],
+  ["Protein bar",[["protein_bar",1,"pack"]],"s v hp nc"],
+  ["Roasted chana",[["roasted_chana",1,"serving"]],"s v hp nc ind"],
+  ["Roasted makhana",[["makhana",1,"serving"]],"s v nc ind"],
+  ["Sprouts salad",[["sprouts",1,"bowl"]],"s v nc ind"],
+  ["Chana chaat",[["chana_chaat",1,"bowl"]],"s v ind"],
+  ["Curd + 10 almonds",[["curd",1,"bowl"],["almonds",10,"piece"]],"s v nc"],
+  ["Apple + peanut butter",[["apple",1,"piece"],["peanut_butter",1,"tbsp"]],"s v nc"],
+  ["Banana + peanut butter",[["banana",1,"piece"],["peanut_butter",1,"tbsp"]],"s v nc"],
+  ["Roasted peanuts",[["peanuts",1,"serving"]],"s v nc lc"],
+  ["Handful of mixed nuts",[["mixed_nuts",1,"serving"]],"s v nc lc"],
+  ["Guava",[["guava",1,"piece"]],"s v nc lc"],
+  ["Papaya bowl",[["papaya",1,"bowl"]],"s v nc lc"],
+  ["Watermelon bowl",[["watermelon",1,"bowl"]],"s v nc lc"],
+  ["Pomegranate bowl",[["pomegranate",1,"bowl"]],"s v nc"],
+  ["Chaas + cucumber salad",[["chaas",1,"glass"],["salad",1,"bowl"]],"s v nc lc ind"],
+  ["Glass of double-toned milk",[["milk_dt",1,"glass"]],"s v nc"],
+  ["Coconut water",[["coconut_water",1,"glass"]],"s v nc lc"],
 ];
-let FILL=[];
-function fillOptions(n=4){
-  const t=T(),tot=sumN(dayEntries(today()));
-  const R={kcal:t.kcal-tot.kcal,p:t.p-tot.p,c:t.c-tot.c,f:t.f-tot.f};
-  if(R.kcal<60)return {R,list:[]};
-  const cands=COMBOS.map(([name,parts])=>{
+const FILL_FILTERS=[["all","All"],["m","Meals"],["s","Snacks"],["v","Veg"],["e","Eggs"],["n","Non-veg"],["hp","High protein"],["lc","Low carb"],["ind","Indian"],["nc","No cooking"],["usual","Your usual"]];
+let FILL=[],fillPage=0;
+function fillRemaining(){const t=T(),tot=sumN(dayEntries(today()));return {kcal:t.kcal-tot.kcal,p:t.p-tot.p,c:t.c-tot.c,f:t.f-tot.f};}
+// Every combo (and your usual foods) that fits what's left, best first
+function fillRanked(R){
+  if(R.kcal<60)return [];
+  const cands=COMBOS.map(([name,parts,tags])=>{
     const items=parts.map(([id,q,u])=>{const f=FOODS.find(x=>x.id===id);return f?foodToItem({...f,_id:f.id,_label:f.name},q,u):null;});
     if(items.some(x=>!x))return null;
-    return {name,items,n:sumN(items.map(i=>({n:calc(i)}))),kind:"combo"};
+    return {name,items,n:sumN(items.map(i=>({n:calc(i)}))),tags:tags.split(" ")};
   }).filter(Boolean);
-  frequent(8).forEach(e=>cands.push({name:`${shortQty(e)} ${shortName(e.name)}`,items:[entryToItem(e)],n:calc(e),kind:"usual"}));
+  frequent(8).forEach(e=>{const n=calc(e);cands.push({name:`${shortQty(e)} ${shortName(e.name)}`,items:[entryToItem(e)],n,tags:["usual",n.kcal<300?"s":"m",...(n.p*4>=n.kcal*0.3?["hp"]:[])]});});
   const pw=Math.max(0,Math.min(1,(Math.max(R.p,0)*4)/Math.max(R.kcal,1)*1.6)); // how much protein matters right now
   const score=c=>{
     const fill=Math.min(c.n.kcal,R.kcal)/R.kcal;
     const pf=R.p>0?Math.min(c.n.p,R.p)/R.p:0;
     const overF=Math.max(0,c.n.f-Math.max(R.f,0)),overC=Math.max(0,c.n.c-Math.max(R.c,0));
-    return fill+pf*(0.6+1.4*pw)-overF/12-overC/40+(c.kind==="usual"?0.12:0);
+    return fill+pf*(0.6+1.4*pw)-overF/12-overC/40+(c.tags.includes("usual")?0.12:0);
   };
-  const fits=cands.filter(c=>c.n.kcal<=R.kcal+40&&c.n.kcal>=Math.min(70,R.kcal*0.25)).map(c=>({...c,s:score(c)})).sort((a,b)=>b.s-a.s);
-  const out=[],seen=new Set();
-  const mains=new Set();
-  const take=(c,force)=>{const k=c.name.toLowerCase(),m=c.items[0]?.foodId;if(seen.has(k)||(!force&&mains.has(m)))return;seen.add(k);mains.add(m);out.push(c);};
-  for(const c of fits){if(out.length>=n-1)break;take(c);}
-  // always offer one lighter option when there's a lot of room
-  const light=fits.find(c=>!seen.has(c.name.toLowerCase())&&c.n.kcal<=Math.max(250,R.kcal*0.4));
-  if(light)take(light);
-  for(const c of fits){if(out.length>=n)break;take(c);}
-  for(const c of fits){if(out.length>=n)break;take(c,true);}
-  return {R,list:out.slice(0,n)};
+  const seen=new Set();
+  return cands.filter(c=>c.n.kcal<=R.kcal+40&&c.n.kcal>=Math.min(60,R.kcal*0.2))
+    .filter(c=>{const k=c.name.toLowerCase();if(seen.has(k))return false;seen.add(k);return true;})
+    .map(c=>({...c,s:score(c)})).sort((a,b)=>b.s-a.s);
+}
+// Reorder so neighbours use different main foods (variety in every group of four)
+const famOf=id=>{id=String(id||"");return /chicken|seekh|tandoori/.test(id)?"chicken":/^egg/.test(id)?"egg":/paneer/.test(id)?"paneer":/fish|prawn/.test(id)?"fish":/dal|rajma|chole|chana|sprouts/.test(id)?"pulses":/whey|protein_bar/.test(id)?"whey":/curd|yogurt|milk|chaas/.test(id)?"dairy":/soya|tofu/.test(id)?"soy":id;};
+function varied(list){
+  const left=list.slice(),out=[];
+  while(left.length){const used=new Set();for(let i=0;i<left.length;){const m=famOf(left[i].items[0]?.foodId);if(!used.has(m)){used.add(m);out.push(left.splice(i,1)[0]);}else i++;}}
+  return out;
+}
+// The 4 on the Today card: 3 meals + 1 snack (or mostly snacks when little is left); Refresh moves to the next set
+function fillOptions(page=0){
+  const R=fillRemaining(),all=fillRanked(R);
+  const meals=varied(all.filter(c=>c.tags.includes("m"))),snacks=varied(all.filter(c=>c.tags.includes("s")));
+  const [big,small,nb]=R.kcal>=350?[meals,snacks,3]:[snacks,meals,3];
+  const pick=(arr,start,count)=>{const r=[];if(!arr.length)return r;for(let i=0;i<Math.min(count,arr.length);i++)r.push(arr[(start+i)%arr.length]);return r;};
+  let list=[...pick(big,page*nb,nb),...pick(small,page,1)];
+  if(list.length<4)list=[...list,...all.filter(c=>!list.includes(c))].slice(0,4);
+  return {R,list,total:all.length};
+}
+const itemTxt=c=>c.items.map(itemLbl).join(" + ");
+function fillRow(c,i,attr){
+  const R=fillRemaining();
+  return `<div class="fillopt">
+    <div style="min-width:0"><b>${esc(c.name)}</b> <span class="badge b-generic">${c.tags.includes("usual")?"Your usual":c.tags.includes("s")?"Snack":"Meal"}</span>
+      <div class="tiny muted">${esc(itemTxt(c))}</div>
+      <div class="small num" style="margin-top:2px"><b>${c.n.kcal}</b> kcal · <span style="color:var(--protein)">${r0(c.n.p)} g P</span> · ${r0(c.n.c)} C · ${r0(c.n.f)} F</div>
+      <div class="tiny muted num">Leaves ${r0(R.kcal-c.n.kcal)} kcal · ${r0(Math.max(R.p-c.n.p,0))} g protein</div></div>
+    <button class="btn" ${attr}="${i}" aria-label="Add ${esc(c.name)}">Add</button></div>`;
 }
 function fillCard(){
-  const {R,list}=fillOptions(4);FILL=list;
+  const {R,list,total}=fillOptions(fillPage);FILL=list;
   if(R.kcal<60)return `<section class="card stack" style="gap:8px"><h3 style="font-size:1.05rem">Fill your meter</h3><p class="small" style="margin:0">You've reached today's calories. If you're still hungry, cucumber salad, chaas or green tea add almost nothing.</p></section>`;
-  const itemTxt=c=>c.items.map(itemLbl).join(" + ");
   return `<section class="card stack" style="gap:10px">
-    <div><h3 style="font-size:1.05rem">Fill your meter</h3><span class="small muted num">${r0(R.kcal)} kcal · ${r0(Math.max(R.p,0))} g protein · ${r0(Math.max(R.c,0))} g carbs · ${r0(Math.max(R.f,0))} g fat left</span></div>
-    ${list.length?list.map((c,i)=>`<div class="fillopt">
-      <div style="min-width:0"><b>${esc(c.name)}</b>${c.kind==="usual"?` <span class="badge b-generic">Your usual</span>`:""}
-        <div class="tiny muted">${esc(itemTxt(c))}</div>
-        <div class="small num" style="margin-top:2px"><b>${c.n.kcal}</b> kcal · <span style="color:var(--protein)">${r0(c.n.p)} g P</span> · ${r0(c.n.c)} C · ${r0(c.n.f)} F</div>
-        <div class="tiny muted num">Leaves ${r0(R.kcal-c.n.kcal)} kcal · ${r0(Math.max(R.p-c.n.p,0))} g protein</div></div>
-      <button class="btn" data-fill="${i}" aria-label="Add ${esc(c.name)}">Add</button></div>`).join(""):`<p class="small muted" style="margin:0">Nothing in the database fits ${r0(R.kcal)} kcal neatly. A fruit or a glass of chaas works.</p>`}
+    <div class="row between" style="align-items:flex-start"><div style="min-width:0"><h3 style="font-size:1.05rem">Fill your meter</h3><span class="small muted num">${r0(R.kcal)} kcal · ${r0(Math.max(R.p,0))} g protein · ${r0(Math.max(R.c,0))} g carbs · ${r0(Math.max(R.f,0))} g fat left</span></div>
+      ${total>4?`<button class="chip" data-act="fillrefresh" aria-label="Show other ideas">↻ Refresh</button>`:""}</div>
+    ${list.length?list.map((c,i)=>fillRow(c,i,"data-fill")).join(""):`<p class="small muted" style="margin:0">Nothing in the database fits ${r0(R.kcal)} kcal neatly. A fruit or a glass of chaas works.</p>`}
+    ${total>4?`<button class="btn block" data-act="fillmore">More options (${total})</button>`:""}
   </section>`;
 }
+
+/* "More options" screen: every fitting option, with filters, Show more and Shuffle */
+let MORE={filter:"all",shown:8,shuffle:0,list:[]};
+function openMoreOptions(){MORE={filter:"all",shown:8,shuffle:0,list:[]};drawMoreOptions();}
+function drawMoreOptions(){
+  const R=fillRemaining();
+  let all=fillRanked(R);
+  if(MORE.shuffle){let seed=MORE.shuffle;const rnd=()=>((seed=(seed*16807)%2147483647)/2147483647);all=all.map(c=>({...c,s:c.s+rnd()*0.6})).sort((a,b)=>b.s-a.s);}
+  all=varied(all);
+  const counts=Object.fromEntries(FILL_FILTERS.map(([k])=>[k,k==="all"?all.length:all.filter(c=>c.tags.includes(k)).length]));
+  const list=MORE.filter==="all"?all:all.filter(c=>c.tags.includes(MORE.filter));
+  MORE.list=list;
+  const sh=sheet(`<div class="row between"><h2 style="font-size:1.4rem">Options that fit</h2><button class="btn ghost" data-x>Close</button></div>
+    <span class="small muted num">${r0(R.kcal)} kcal · ${r0(Math.max(R.p,0))} g protein · ${r0(Math.max(R.c,0))} g carbs · ${r0(Math.max(R.f,0))} g fat left today</span>
+    <div class="chips scroll" aria-label="Filter options">${FILL_FILTERS.filter(([k])=>k==="all"||counts[k]).map(([k,l])=>`<button class="chip ${MORE.filter===k?"on":""}" data-mf="${k}">${l} <span class="tiny num" style="opacity:.7">${counts[k]}</span></button>`).join("")}</div>
+    <section class="card stack" style="gap:10px">${list.length?list.slice(0,MORE.shown).map((c,i)=>fillRow(c,i,"data-mo")).join(""):`<p class="small muted" style="margin:0">Nothing in this filter fits what's left today. Try another filter.</p>`}</section>
+    <div class="row">${list.length>MORE.shown?`<button class="btn" style="flex:1" data-act="moremore">Show more (${list.length-MORE.shown} left)</button>`:""}<button class="btn ghost" style="flex:1" data-act="moreshuffle">↻ Shuffle</button></div>
+    <p class="tiny muted" style="margin:0">Amounts are typical portions from the food database. Tap Add to adjust before logging.</p>`);
+  sh.querySelector("[data-x]").onclick=closeSheet;
+  sh.onclick=ev=>{const b=ev.target.closest("button");if(!b)return;
+    if(b.dataset.mf){MORE.filter=b.dataset.mf;MORE.shown=8;keepScroll(drawMoreOptions);return;}
+    if(b.dataset.mo!=null){const c=MORE.list[+b.dataset.mo];if(c)openReview(c.items.map(i=>({...i})),{title:c.name,info:"Adjust amounts if needed, then add."});return;}
+    if(b.dataset.act==="moremore"){MORE.shown+=8;keepScroll(drawMoreOptions);return;}
+    if(b.dataset.act==="moreshuffle"){MORE.shuffle=Math.floor(Math.random()*1e9)+1;MORE.shown=8;drawMoreOptions();sh.scrollTop=0;return;}
+  };
+}
+
 function quickCard(){
   const q=frequent(8);QUICK=q;
   if(!q.length)return "";
@@ -1116,6 +1201,8 @@ function bindView(){
     if(a==="savetgt"){S.profile.targets={kcal:+$("#tK").value||1900,p:+$("#tP").value||120,c:+$("#tC").value||200,f:+$("#tF").value||55};Store.saveMeta();render();toast("Targets saved");return;}
     if(a==="newfood"){openCustomFood();return;}
     if(a==="openadd"){openAdd();return;}
+    if(a==="fillrefresh"){fillPage++;render();return;}
+    if(a==="fillmore"){openMoreOptions();return;}
     if(a==="signin"){Auth.signIn();return;}
     if(a==="signout"){Auth.signOut();return;}
     if(a==="backupall"){b.disabled=true;await Store.backupAll();b.disabled=false;if(Store.status==="ok")toast("Everything backed up to Drive");return;}
