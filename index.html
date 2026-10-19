@@ -721,7 +721,7 @@ function quickAdd(e,day){
   undoToast(`Added ${shortQty(e)} ${shortName(e.name)} · ${r.kcal} kcal`,()=>{S.days[r.k]=dayEntries(r.k).filter(x=>!r.ids.includes(x.id));Store.saveDay(r.k);render();});
 }
 
-/* "Fill your meter": meals and snacks that fit what's left today, picked from the food database (no AI).
+/* "Options to include in diet": meals and snacks that fit what's left today, picked from the food database (no AI).
    Tags: m=meal s=snack · v=veg e=egg n=non-veg · hp=high protein lc=low carb ind=Indian nc=no cooking */
 const COMBOS=[
   ["Grilled chicken + salad",[["chicken_breast",150,"g"],["salad",1,"bowl"]],"m n hp lc"],
@@ -840,9 +840,9 @@ function fillRow(c,i,attr){
 }
 function fillCard(){
   const {R,list,total}=fillOptions(fillPage);FILL=list;
-  if(R.kcal<60)return `<section class="card stack" style="gap:8px"><h3 style="font-size:1.05rem">Fill your meter</h3><p class="small" style="margin:0">You've reached today's calories. If you're still hungry, cucumber salad, chaas or green tea add almost nothing.</p></section>`;
+  if(R.kcal<60)return `<section class="card stack" style="gap:8px"><h3 style="font-size:1.05rem">Options to include in diet</h3><p class="small" style="margin:0">You've reached today's calories. If you're still hungry, cucumber salad, chaas or green tea add almost nothing.</p></section>`;
   return `<section class="card stack" style="gap:10px">
-    <div class="row between" style="align-items:flex-start"><div style="min-width:0"><h3 style="font-size:1.05rem">Fill your meter</h3><span class="small muted num">${r0(R.kcal)} kcal · ${r0(Math.max(R.p,0))} g protein · ${r0(Math.max(R.c,0))} g carbs · ${r0(Math.max(R.f,0))} g fat left</span></div>
+    <div class="row between" style="align-items:flex-start"><div style="min-width:0"><h3 style="font-size:1.05rem">Options to include in diet</h3><span class="small muted num">${r0(R.kcal)} kcal · ${r0(Math.max(R.p,0))} g protein · ${r0(Math.max(R.c,0))} g carbs · ${r0(Math.max(R.f,0))} g fat left</span></div>
       ${total>4?`<button class="chip" data-act="fillrefresh" aria-label="Show other ideas">↻ Refresh</button>`:""}</div>
     ${list.length?list.map((c,i)=>fillRow(c,i,"data-fill")).join(""):`<p class="small muted" style="margin:0">Nothing in the database fits ${r0(R.kcal)} kcal neatly. A fruit or a glass of chaas works.</p>`}
     ${total>4?`<button class="btn block" data-act="fillmore">More options (${total})</button>`:""}
