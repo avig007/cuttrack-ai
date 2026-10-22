@@ -1,6 +1,6 @@
 // Offline support: the app shell is cached so you can open CutTrack and log food without internet.
 // Your entries save on the phone and upload to Drive when you're back online.
-const CACHE = "cuttrack-v8";
+const CACHE = "cuttrack-v9";
 const SHELL = ["/", "/index.html", "/manifest.webmanifest", "/icons/apple-touch-icon.png", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {
