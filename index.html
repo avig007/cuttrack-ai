@@ -104,6 +104,12 @@ header.top h1{font-size:1.5rem;font-weight:700}
 
 /* inputs */
 input,select,textarea{font-size:16px!important}
+.savebtn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:99px;padding:6px 11px;font-size:.78rem;font-weight:600;min-height:34px;white-space:nowrap;flex-shrink:0}
+.savebtn svg{width:16px;height:16px;color:var(--accent)}
+.savebtn[data-state="ok"] svg,.savebtn[data-state="ok"]{color:var(--ok)}
+.savebtn[data-state="pending"]{border-color:var(--accent)}
+.savebtn[data-state="err"]{border-color:var(--fat);color:var(--fat)}.savebtn[data-state="err"] svg{color:var(--fat)}
+.savebtn[data-state="busy"]{opacity:.7}
 html,body,button,a,input,select,textarea,label{touch-action:manipulation}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 input[type=text],input[type=number],input[type=date],select,textarea{width:100%;background:var(--surface-2);border:1px solid transparent;border-radius:12px;padding:11px 12px;min-height:44px}
@@ -209,7 +215,7 @@ nav.tabs .add span.t{color:var(--muted)}
       <h1 id="greet">Good evening</h1>
       <div class="date" id="todayLbl"></div>
     </div>
-    <div class="label" id="syncLbl" title="Where your data is saved">Loading…</div>
+    <button class="savebtn" id="saveBtn" type="button" title="Save everything to Google Drive now"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 9.5H7z"/><path d="M12 11v6M9.5 13.5 12 11l2.5 2.5"/></svg><span id="syncLbl">Save to Drive</span></button>
   </header>
   <main id="view"></main>
 </div>
@@ -440,34 +446,62 @@ const Auth={signed:false,email:ls.get(LS_EMAIL)||"",ai:true,
     SAMPLE=this.signed&&this.ai?makeSample():null;IMG_OK=!!SAMPLE;
   },
   signIn(){location.href="/api/auth/login";},
-  signOut(silent){ls.del(LS_SESS);this.signed=false;SAMPLE=null;IMG_OK=false;updateSyncLbl();if(!silent){render();toast("Signed out. Your log stays on this phone.");}}
+  // silent = the sign-in expired: keep this account's data on screen; it syncs again after signing back in.
+  // A deliberate sign-out puts this account's data away and shows the signed-out (guest) copy.
+  async signOut(silent){
+    if(!silent&&this.signed){try{await Store.push();}catch(e){}}
+    ls.del(LS_SESS);this.signed=false;SAMPLE=null;IMG_OK=false;
+    if(!silent){Store.cache();ls.del(LS_EMAIL);this.email="";Store.load(null);VIEW_DAY=today();CHAT=S.chat||[];render();toast("Signed out. Your data is saved to your Google account and comes back when you sign in.");}
+    updateSyncLbl();
+  }
 };
 
-/* Local copy on the phone + Google Drive as the permanent store (no AI involved) */
-const Store={dirty:new Set(),metaDirty:false,timer:null,pushing:false,again:false,status:"idle",err:"",last:null,
+/* Each Google account has its own copy on this phone, plus Google Drive as the permanent store (no AI involved).
+   Everything is kept: profile and targets, every day's entries, weights, saved foods and recipes, and coach chats. */
+const acctKey=a=>a?"cuttrack.acct."+a.toLowerCase():LS;
+const freshState=owner=>({profile:structuredClone(DEFAULT_PROFILE),custom:[],weights:[],days:{},dayUpdated:{},metaUpdated:0,chat:[],chatUpdated:0,owner});
+function normState(o,owner){const s={...freshState(owner),...o};s.profile={...DEFAULT_PROFILE,...(o.profile||{})};s.dayUpdated=s.dayUpdated||{};s.chat=Array.isArray(s.chat)?s.chat:[];return s;}
+const Store={acct:null,dirty:new Set(),metaDirty:false,timer:null,pushing:false,again:false,status:"idle",err:"",last:null,guestCandidate:null,
+  read(key){try{const raw=ls.get(key);return raw?JSON.parse(raw):null;}catch(e){return null;}},
+  // Load the copy that belongs to this account (or the signed-out copy when acct is null)
+  load(acct){
+    this.acct=acct||null;this.dirty=new Set();this.metaDirty=false;this.guestCandidate=null;
+    if(!acct){const g=this.read(LS);S=normState(g&&(g.owner===undefined||g.owner==="guest")?g:{},"guest");return;}
+    const mine=this.read(acctKey(acct));
+    if(mine){S=normState(mine,acct);try{(JSON.parse(ls.get(LS_DIRTY+"."+acct)||"[]")).forEach(k=>this.dirty.add(k));}catch(e){}return;}
+    // First time this account is used on this phone
+    const legacy=this.read(LS);
+    if(legacy&&legacy.owner===undefined){S=normState(legacy,acct);ls.del(LS);Object.keys(S.days).forEach(k=>this.dirty.add(k));this.metaDirty=true;this.cache();return;} // data from before accounts were separated: it was this person's
+    S=freshState(acct);
+    if(legacy&&legacy.owner==="guest"&&(Object.keys(legacy.days||{}).length||legacy.profile?.onboarded))this.guestCandidate=legacy; // logged while signed out: keep it only if the account has nothing yet
+  },
   async init(){
-    try{const raw=ls.get(LS);if(raw){const o=JSON.parse(raw);S={...S,...o,profile:{...DEFAULT_PROFILE,...o.profile}};}}catch(e){}
-    S.dayUpdated=S.dayUpdated||{};S.metaUpdated=S.metaUpdated||0;
-    try{(JSON.parse(ls.get(LS_DIRTY)||"[]")).forEach(k=>this.dirty.add(k));}catch(e){}
+    this.load(API.token()||ls.get(LS_EMAIL)?ls.get(LS_EMAIL):null);
+    CHAT=S.chat||[];
     render();
     await Auth.check();
+    if(Auth.signed&&Auth.email&&Auth.email.toLowerCase()!==(this.acct||"")){ls.set(LS_EMAIL,Auth.email);this.load(Auth.email);CHAT=S.chat||[];}
     updateSyncLbl();
     if(Auth.signed)await this.pull();
     render();
     if(!S.profile.onboarded)openOnboarding();
     window.addEventListener("online",()=>{if(Auth.signed)this.push();});
     document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&Auth.signed&&!this.pushing&&!document.querySelector(".sheet"))this.pull();});
+    window.addEventListener("pagehide",()=>{if(Auth.signed&&(this.dirty.size||this.metaDirty))this.push();});
   },
-  cache(){ls.set(LS,JSON.stringify(S));ls.set(LS_DIRTY,JSON.stringify([...this.dirty]));},
+  cache(){S.owner=this.acct||"guest";ls.set(acctKey(this.acct),JSON.stringify(S));ls.set(this.acct?LS_DIRTY+"."+this.acct:LS_DIRTY,JSON.stringify([...this.dirty]));},
   saveMeta(){S.metaUpdated=Date.now();this.metaDirty=true;this.cache();this.schedule();},
   saveDay(k){S.dayUpdated[k]=Date.now();this.dirty.add(k);this.cache();this.schedule();},
+  saveChat(){S.chat=CHAT.slice(-60);S.chatUpdated=Date.now();this.metaDirty=true;this.cache();this.schedule();},
   schedule(){clearTimeout(this.timer);this.timer=setTimeout(()=>this.push(),2000);},
-  snapshot(){return {app:"CutTrack AI",version:1,savedAt:Date.now(),profile:S.profile,custom:S.custom,weights:S.weights,days:S.days,dayUpdated:S.dayUpdated,metaUpdated:S.metaUpdated};},
-  // Newest copy of each day wins, so two phones can both log.
+  snapshot(){return {app:"CutTrack AI",version:2,account:this.acct,savedAt:Date.now(),profile:S.profile,custom:S.custom,weights:S.weights,days:S.days,dayUpdated:S.dayUpdated,metaUpdated:S.metaUpdated,chat:S.chat,chatUpdated:S.chatUpdated};},
+  // Newest copy of each part wins, so two phones can both log.
   merge(r){
     const newer=[];let metaLocal=false;
     if((r.metaUpdated||0)>(S.metaUpdated||0)){S.profile={...DEFAULT_PROFILE,...(r.profile||{})};S.custom=r.custom||[];S.weights=r.weights||[];S.metaUpdated=r.metaUpdated;}
     else if((S.metaUpdated||0)>(r.metaUpdated||0))metaLocal=true;
+    if((r.chatUpdated||0)>(S.chatUpdated||0)){S.chat=Array.isArray(r.chat)?r.chat:[];S.chatUpdated=r.chatUpdated;CHAT=S.chat;}
+    else if((S.chatUpdated||0)>(r.chatUpdated||0))metaLocal=true;
     const ru=r.dayUpdated||{},keys=new Set([...Object.keys(r.days||{}),...Object.keys(S.days)]);
     for(const k of keys){const a=ru[k]||0,b=S.dayUpdated[k]||0;
       if(a>b){S.days[k]=(r.days||{})[k]||[];S.dayUpdated[k]=a;}
@@ -479,15 +513,22 @@ const Store={dirty:new Set(),metaDirty:false,timer:null,pushing:false,again:fals
     try{
       const {data,folderUrl}=await API.call("/api/drive",{action:"pull"});
       if(folderUrl)ls.set(LS_FOLDER,folderUrl);
-      if(data&&data.app==="CutTrack AI"){const {newer,metaLocal}=this.merge(data);newer.forEach(k=>this.dirty.add(k));if(metaLocal)this.metaDirty=true;}
-      else{Object.keys(S.days).forEach(k=>{if(dayEntries(k).length)this.dirty.add(k)});this.metaDirty=true;}
+      if(data&&data.app==="CutTrack AI"){
+        const {newer,metaLocal}=this.merge(data);newer.forEach(k=>this.dirty.add(k));if(metaLocal)this.metaDirty=true;
+        if(this.guestCandidate){this.guestCandidate=null;}  // account already has data: leave the signed-out log separate
+      }else{
+        if(this.guestCandidate){S=normState(this.guestCandidate,this.acct);CHAT=S.chat||[];ls.del(LS);this.guestCandidate=null;toast("Your earlier log is now saved to this Google account.");}
+        Object.keys(S.days).forEach(k=>{if(dayEntries(k).length)this.dirty.add(k)});this.metaDirty=true;
+      }
       this.cache();render();
+      if(!S.profile.onboarded&&!document.querySelector(".sheet"))openOnboarding();
+      else if(S.profile.onboarded&&document.querySelector("#obGo"))closeSheet();
       if(this.dirty.size||this.metaDirty)await this.push();else{this.last=Date.now();this.set("ok");}
     }catch(e){this.set("error",e);}
   },
   async push(){
     if(!Auth.signed)return;
-    if(this.pushing){this.again=true;return;}
+    if(this.pushing){this.again=true;return this.waitIdle();}
     this.pushing=true;clearTimeout(this.timer);
     const days=[...this.dirty];this.dirty.clear();this.metaDirty=false;this.cache();
     try{
@@ -497,11 +538,18 @@ const Store={dirty:new Set(),metaDirty:false,timer:null,pushing:false,again:fals
       this.last=Date.now();this.set("ok");
     }catch(e){days.forEach(k=>this.dirty.add(k));this.metaDirty=true;this.cache();this.set("error",e);}
     this.pushing=false;
-    if(this.again){this.again=false;this.push();}
+    if(this.again){this.again=false;await this.push();}
+  },
+  waitIdle(){return new Promise(res=>{const t=setInterval(()=>{if(!this.pushing){clearInterval(t);res();}},200);});},
+  // Top-right button: save everything now (full data file, plus today's text file and anything waiting)
+  async saveNow(){
+    if(!Auth.signed){Auth.signIn();return;}
+    this.dirty.add(today());this.metaDirty=true;await this.push();
+    if(this.status==="ok")toast("Saved to Google Drive");else toast(driveStatusText());
   },
   async backupAll(){Object.keys(S.days).forEach(k=>this.dirty.add(k));this.metaDirty=true;await this.push();},
   async wipe(){
-    S={profile:structuredClone(DEFAULT_PROFILE),custom:[],weights:[],days:{},dayUpdated:{},metaUpdated:Date.now()};
+    S={...freshState(this.acct||"guest"),metaUpdated:Date.now(),chatUpdated:Date.now()};CHAT=[];
     this.dirty.clear();this.cache();
     if(Auth.signed){this.metaDirty=true;await this.push();}   // replaces the Drive data file; daily .txt files stay as your record
   },
@@ -544,7 +592,10 @@ function driveStatusText(){
     not_configured:"The server isn't fully set up. Check the Vercel environment variables."}[Store.err])||"Couldn't back up just now. Changes are kept on this phone; it tries again on your next change.";
   return Store.dirty.size?"Changes waiting to upload.":"Signed in. Your next change backs up to Drive.";
 }
-function updateSyncLbl(){const l=$("#syncLbl");if(!l)return;l.textContent=!Auth.signed?"On this phone":Store.status==="error"?"Drive ⚠":Store.status==="saving"?"Saving…":"Saved to Drive";}
+function updateSyncLbl(){const l=$("#syncLbl"),b=$("#saveBtn");if(!l)return;
+  const st=!Auth.signed?"off":Store.status==="error"?"err":Store.status==="saving"?"busy":(Store.dirty.size||Store.metaDirty)?"pending":Store.last?"ok":"idle";
+  l.textContent={off:"Sign in to save",err:"Retry save",busy:"Saving…",pending:"Save to Drive",ok:"Saved",idle:"Save to Drive"}[st];
+  if(b){b.dataset.state=st;b.disabled=st==="busy";b.title=st==="ok"?"Saved to Google Drive at "+new Date(Store.last).toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"})+". Tap to save again.":"Save everything to Google Drive now";}}
 
 /* ---------- AI (OpenAI or Groq, through the server) ---------- */
 let SAMPLE=null,IMG_OK=false;
@@ -900,6 +951,7 @@ function suggested(p){
 /* ---------- Rendering ---------- */
 let TAB="today",openEntry=null,histRange=7,histOpen=null;
 document.querySelectorAll("nav.tabs [data-tab]").forEach(b=>b.onclick=()=>{if(TAB!==b.dataset.tab)Voice.cancel();if(b.dataset.tab==="today"&&TAB==="today")VIEW_DAY=today();TAB=b.dataset.tab;document.querySelectorAll("nav.tabs [data-tab]").forEach(x=>x.classList.toggle("on",x===b));render();scrollTo(0,0);});
+$("#saveBtn").onclick=()=>Store.saveNow();
 $("#addBtn").onclick=()=>openAdd(TAB==="today"&&VIEW_DAY!==today()?VIEW_DAY:null);
 
 function render(){
@@ -1192,7 +1244,7 @@ LOCAL TIME: ${new Date().toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-di
 const COACH_RULES=`You are the coach inside CutTrack AI, a calorie and macro tracker for an Indian user. Answer in under 110 words, plain text, no markdown headings or tables. Use the user's real numbers below. When suggesting foods, prefer Indian everyday options and give approximate kcal and protein built only from the REFERENCE PORTIONS or USER'S SAVED FOODS, and state what would remain afterwards. Keep suggestions within the remaining fat and carbs where possible. Never shame food choices or suggest skipping meals, fasting to compensate, or going below the calorie target to "make up" for a big day; one high day is fine and the weekly average matters. No medical diagnosis; for medical conditions, suggest a doctor or dietitian. If the log is empty, say so and give general guidance for the day.`;
 async function askCoach(text){
   if(coachBusy||!text.trim())return;
-  if(!SAMPLE){CHAT.push({role:"user",content:text},{role:"assistant",content:"Sign in with Google in the Profile tab to use the coach. Your log and targets work without it."});render();return;}
+  if(!SAMPLE){CHAT.push({role:"user",content:text},{role:"assistant",content:"Sign in with Google in the Profile tab to use the coach. Your log and targets work without it."});Store.saveChat();render();return;}
   CHAT.push({role:"user",content:text});coachBusy=true;render();
   const turns=[{role:"user",content:COACH_RULES+"\n\n"+coachContext()+"\n\nThe conversation follows."},...CHAT.slice(-10)];
   if(turns[1]?.role==="assistant")turns.splice(1,1);
@@ -1201,7 +1253,7 @@ async function askCoach(text){
     const {text:ans}=await SAMPLE(turns,{cache:false,signal:coachCtl.signal,onText:({text})=>{const l=$("#live");if(l)l.textContent=text;}});
     CHAT.push({role:"assistant",content:ans});
   }catch(e){if(e.code!=="cancelled")CHAT.push({role:"assistant",content:e.text?e.text+"\n\n(interrupted)":aiMsg(e)});else if(e.text)CHAT.push({role:"assistant",content:e.text});}
-  coachBusy=false;render();
+  coachBusy=false;Store.saveChat();render();
   setTimeout(()=>window.scrollTo({top:document.body.scrollHeight}),50);
 }
 
@@ -1242,7 +1294,7 @@ function viewProfile(){
   </section>
   <section class="card stack"><h2 style="font-size:1.25rem">Google account & Drive</h2>
     ${Auth.signed?`<div class="row between" style="flex-wrap:wrap"><span class="small">Signed in as <b>${esc(Auth.email||"your Google account")}</b></span><button class="btn ghost" data-act="signout">Sign out</button></div>`:`<button class="btn primary" data-act="signin">Sign in with Google</button>`}
-    <p class="small muted" style="margin:0">Your log is stored in <b>My Drive › CutTrack AI</b>. Each day gets a text file with every entry, its time, amount and macros, plus the day's totals, for example <span class="num">CutTrack AI/2026/10 - October/2026-10-18.txt</span>. A data file in the same folder restores everything on a new phone. Saving to Drive never uses AI.</p>
+    <p class="small muted" style="margin:0">Your log is stored in <b>My Drive › CutTrack AI</b>. Each day gets a text file with every entry, its time, amount and macros, plus the day's totals, for example <span class="num">CutTrack AI/2026/10 - October/2026-10-18.txt</span>. Everything (profile, targets, every entry, weights, saved foods, recipes and coach chats) is kept with your Google account: sign in on any phone and it all comes back. It saves automatically a couple of seconds after each change, or tap <b>Save to Drive</b> at the top right. Saving never uses AI.</p>
     <div class="callout small" id="drvStatus" role="status">${esc(driveStatusText())}</div>
     <div class="row" style="flex-wrap:wrap">${Auth.signed?`<button class="btn" data-act="backupall">Back up everything now</button>`:""}${ls.get(LS_FOLDER)?`<a class="btn ghost" href="${esc(ls.get(LS_FOLDER))}" target="_blank" rel="noopener">Open Drive folder</a>`:""}</div>
   </section>
