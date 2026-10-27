@@ -205,6 +205,10 @@ nav.tabs .add span.t{color:var(--muted)}
 .flagbox{border-radius:10px;padding:9px 11px;font-size:.85rem;line-height:1.45}
 .flagbox.swap{background:color-mix(in srgb,var(--fat) 12%,transparent)}
 .flagbox.watch{background:color-mix(in srgb,var(--carbs) 13%,transparent)}
+.prevrow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;border-bottom:1px solid var(--line);padding-block:6px}
+.prevrow .prevmain{background:none;border:0;text-align:left;padding:4px 0;display:block;width:100%;min-width:0}
+.results .prevrow button{border-bottom:0}
+.results .prevrow .btn{background:var(--surface-2);min-height:40px;padding:8px 12px;justify-content:center;align-items:center;border-radius:12px;font-weight:600}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 </style>
 </head>
@@ -1397,9 +1401,21 @@ function foodById(id){
   if(String(id).startsWith("c_")){const c=S.custom.find(x=>"c_"+x.id===id);return c?{...c,_id:id,_label:(c.brand?c.brand+" ":"")+c.name}:null;}
   const f=FOODS.find(x=>x.id===id);return f?{...f,_id:f.id,_label:f.name}:null;
 }
+/* Everything you've logged before: one row per food, latest amount first */
+function loggedHistory(){
+  const stat={};
+  Object.entries(S.days).forEach(([d,es])=>(es||[]).forEach(e=>{
+    const key=String(e.foodId||("x:"+e.name)).toLowerCase();
+    const s=stat[key]||(stat[key]={e,count:0,at:-1,day:d});
+    s.count++;const t=e.loggedAt||new Date(d+"T12:00").getTime();if(t>=s.at){s.e=e;s.at=t;s.day=d;}
+  }));
+  return Object.values(stat).sort((a,b)=>b.at-a.at);
+}
+const agoLbl=d=>{const n=dayDiff(today(),d);return n<=0?"today":n===1?"yesterday":n<7?n+" days ago":fmtDate(d);};
 function browseCats(){
   const cats=FILTERS.map(([n,ids])=>[n,ids.map(foodById).filter(Boolean)]);
   if(S.custom.length)cats.unshift(["My foods",S.custom.map(c=>foodById("c_"+c.id)).filter(Boolean)]);
+  if(Object.values(S.days).some(es=>es&&es.length))cats.unshift(["Previously added",null]);
   return cats;
 }
 const portionLbl=f=>(f.def==="g"||f.def==="ml")?`100 ${f.def}`:`1 ${UNIT_LBL[f.def]||f.def}`;
@@ -1407,10 +1423,22 @@ const portionKcal=f=>calc({qty:(f.def==="g"||f.def==="ml")?100:1,unit:f.def,unit
 function bindBrowse(sh){
   const sr=sh.querySelector("#srIn"),res=sh.querySelector("#srRes"),catRow=sh.querySelector("#catRow"),sub=sh.querySelector("#subRow");
   const cats=browseCats();
-  let shown=[];
+  let shown=[],prev=[];
+  if(browseCat===null&&cats[0]?.[0]==="Previously added")browseCat="Previously added";   // open on your own history
   const draw=()=>{
     catRow.innerHTML=cats.map(([n])=>`<button class="chip ${browseCat===n?"on":""}" data-cat="${esc(n)}">${esc(n)}</button>`).join("");
     const q=sr.value.trim();
+    if(browseCat==="Previously added"){
+      const all=loggedHistory(),ql=q.toLowerCase().replace(/^\d+(\.\d+)?\s*\w*\s*/,"")||q.toLowerCase();
+      prev=q?all.filter(h=>h.e.name.toLowerCase().includes(ql)||ql.split(" ").every(w=>h.e.name.toLowerCase().includes(w))):all;
+      sub.innerHTML="";
+      res.innerHTML=(prev.length?prev.slice(0,60).map((h,i)=>`<div class="prevrow">
+        <button class="prevmain" data-prev="${i}"><span style="min-width:0"><b>${esc(h.e.name)}</b><br><span class="small muted num">${esc(shortQty(h.e))} · ${r0(h.e.n?.kcal)} kcal · ${r0(h.e.n?.p)} g P</span><br><span class="tiny muted">Last added ${agoLbl(h.day)}${h.count>1?" · "+h.count+" times":""}</span></span></button>
+        <button class="btn" data-prevadd="${i}" aria-label="Add ${esc(shortQty(h.e))} ${esc(h.e.name)} now">+ Add</button></div>`).join("")
+        :`<div class="empty">${q?"Nothing you've logged matches “"+esc(q)+"”.":"Foods you log will appear here."}</div>`)+
+        (q&&!prev.length&&SAMPLE?`<button data-ai><span><b>Ask AI about “${esc(q)}”</b><br><span class="small muted">For restaurant dishes or products not listed</span></span></button>`:"");
+      return;
+    }
     const inCat=browseCat?(cats.find(c=>c[0]===browseCat)?.[1]||[]):null;
     if(q){
       let hits=search(q.replace(/^\d+(\.\d+)?\s*\w*\s*/,"")||q,inCat?60:8);
@@ -1429,6 +1457,8 @@ function bindBrowse(sh){
     const b=ev.target.closest("button");if(!b)return;
     if(b.dataset.cat!=null){browseCat=browseCat===b.dataset.cat?null:b.dataset.cat;draw();return;}
     if(b.dataset.ai!=null){parseAndReview(sr.value.trim());return;}
+    if(b.dataset.prev!=null){const h=prev[+b.dataset.prev];if(h)openReview([entryToItem(h.e)],{title:"Add again",info:"Your last amount is filled in. Change it if needed."});return;}
+    if(b.dataset.prevadd!=null){const h=prev[+b.dataset.prevadd];if(!h)return;const day=ADD_DAY;closeSheet();TAB="today";document.querySelectorAll("nav.tabs [data-tab]").forEach(x=>x.classList.toggle("on",x.dataset.tab==="today"));if(day)VIEW_DAY=day;quickAdd(h.e,day);return;}
     if(b.dataset.hit!=null){
       const f=shown[+b.dataset.hit];if(!f)return;
       const q=sr.value.trim(),{items}=q?localParse(q):{items:[]};
