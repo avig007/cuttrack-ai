@@ -1363,7 +1363,7 @@ function bindView(){
 let NOANIM=false;
 function sheet(html){closeSheet();const sc=document.createElement("div");sc.className="scrim";sc.onclick=closeSheet;const sh=document.createElement("div");sh.className="sheet";if(NOANIM)sh.style.animation="none";sh.setAttribute("role","dialog");sh.innerHTML=`<div class="inner"><div class="grab"></div>${html}</div>`;document.body.append(sc,sh);return sh;}
 function closeSheet(){if(typeof stopVoice==="function")stopVoice();document.querySelectorAll(".scrim,.sheet").forEach(x=>x.remove());}
-const ico={type:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h10M4 17h13"/></svg>',cam:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',img:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/></svg>',label:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>',search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>',mic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',pen:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>'};
+const ico={type:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h10M4 17h13"/></svg>',cam:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',img:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/></svg>',label:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>',search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>',mic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',hist:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>',pen:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>'};
 
 function openAdd(day){
   ADD_DAY=day&&day!==today()?day:null;
@@ -1378,6 +1378,7 @@ function openAdd(day){
   <div class="field" id="browse"><label class="label" for="srIn">Search or browse foods</label><input type="text" id="srIn" placeholder="Search: paneer, sourdough, chicken breast…" autocomplete="off">
     <div class="chips scroll" id="catRow" aria-label="Food types"></div><div id="subRow"></div><div class="results" id="srRes"></div></div>
   <div class="opts">
+    ${loggedHistory().length?`<button class="opt wide" id="oPrev">${ico.hist}<span style="display:flex;flex-direction:column;gap:2px;text-align:left;color:var(--fg);font-size:inherit"><b>Previously added</b><span>Pick from ${loggedHistory().length} foods you've logged before</span></span></button>`:""}
     <button class="opt" id="oCam">${ico.cam}<b>Take photo</b><span>Meal, pack or label</span></button>
     <button class="opt" id="oLib">${ico.img}<b>Upload photo</b><span>From your library</span></button>
     <button class="opt" id="oLabel">${ico.label}<b>Scan label</b><span>Exact values from the pack</span></button>
@@ -1391,6 +1392,7 @@ function openAdd(day){
   sh.querySelector("#oLib").onclick=()=>pickPhoto("#libIn","auto");
   sh.querySelector("#oLabel").onclick=()=>pickPhoto("#camIn","label");
   sh.querySelector("#oManual").onclick=()=>openManual();
+  const op=sh.querySelector("#oPrev");if(op)op.onclick=()=>openHistory();
   bindBrowse(sh);
   const ur=sh.querySelector("#usualRow");if(ur)ur.onclick=ev=>{const b=ev.target.closest("button[data-u]");if(!b)return;const e=usual[+b.dataset.u];if(!e)return;const day=ADD_DAY;closeSheet();TAB="today";document.querySelectorAll("nav.tabs [data-tab]").forEach(x=>x.classList.toggle("on",x.dataset.tab==="today"));if(day)VIEW_DAY=day;quickAdd(e,day);};
 }
@@ -1412,10 +1414,45 @@ function loggedHistory(){
   return Object.values(stat).sort((a,b)=>b.at-a.at);
 }
 const agoLbl=d=>{const n=dayDiff(today(),d);return n<=0?"today":n===1?"yesterday":n<7?n+" days ago":fmtDate(d);};
+/* "Previously added" screen: everything you've logged before, with quick filters */
+let HIST={sort:"recent",q:"",shown:30,list:[]};
+function openHistory(){HIST={sort:"recent",q:"",shown:30,list:[]};drawHistory(true);}
+function drawHistory(first){
+  const R0=fillRemaining(),all=loggedHistory();
+  const sorts=[["recent","Recent"],["often","Most often"],["protein","High protein"],["fits","Fits what's left"],["light","Under 200 kcal"]];
+  let list=all.slice();
+  const ql=HIST.q.toLowerCase().trim();
+  if(ql)list=list.filter(h=>ql.split(/\s+/).every(w=>h.e.name.toLowerCase().includes(w)));
+  if(HIST.sort==="often")list.sort((a,b)=>b.count-a.count||b.at-a.at);
+  if(HIST.sort==="protein")list=list.filter(h=>(h.e.n?.p||0)*4>=(h.e.n?.kcal||1)*0.25).sort((a,b)=>(b.e.n?.p||0)-(a.e.n?.p||0));
+  if(HIST.sort==="fits")list=list.filter(h=>(h.e.n?.kcal||0)<=Math.max(R0.kcal,0)+20).sort((a,b)=>((b.e.n?.p||0)*4/Math.max(b.e.n?.kcal||1,1))-((a.e.n?.p||0)*4/Math.max(a.e.n?.kcal||1,1)));
+  if(HIST.sort==="light")list=list.filter(h=>(h.e.n?.kcal||0)<200);
+  HIST.list=list;
+  const row=(h,i)=>`<div class="prevrow">
+    <button class="prevmain" data-hv="${i}"><span style="min-width:0"><b>${esc(h.e.name)}</b><br><span class="small muted num">${esc(shortQty(h.e))} · ${r0(h.e.n?.kcal)} kcal · ${r0(h.e.n?.p)} g P · ${r0(h.e.n?.c)} C · ${r0(h.e.n?.f)} F</span><br><span class="tiny muted">Last added ${agoLbl(h.day)}${h.count>1?" · "+h.count+" times":""}</span></span></button>
+    <button class="btn" data-ha="${i}" aria-label="Add ${esc(shortQty(h.e))} ${esc(h.e.name)} now">+ Add</button></div>`;
+  const sh=sheet(`<div class="row between"><button class="btn ghost" data-back aria-label="Back to Add">‹ Back</button><h2 style="font-size:1.25rem">Previously added</h2><button class="btn ghost" data-x>Close</button></div>
+    <input type="text" id="histQ" placeholder="Search your foods" autocomplete="off" value="${esc(HIST.q)}" aria-label="Search previously added foods">
+    <div class="chips scroll">${sorts.map(([k,l])=>`<button class="chip ${HIST.sort===k?"on":""}" data-hs="${k}">${l}</button>`).join("")}</div>
+    ${HIST.sort==="fits"?`<span class="tiny muted num">${r0(Math.max(R0.kcal,0))} kcal left today. Highest protein per calorie first.</span>`:""}
+    <div class="results" id="histList">${list.length?list.slice(0,HIST.shown).map(row).join(""):`<div class="empty">${ql?"Nothing you've logged matches “"+esc(HIST.q)+"”.":"Nothing here for this filter."}</div>`}</div>
+    ${list.length>HIST.shown?`<button class="btn block" data-hmore>Show more (${list.length-HIST.shown})</button>`:""}
+    <p class="tiny muted" style="margin:0">+ Add logs your last amount right away. Tap a name to change the amount first.</p>`);
+  if(!first)sh.style.animation="none";
+  const q=sh.querySelector("#histQ");
+  q.oninput=()=>{HIST.q=q.value;HIST.shown=30;const pos=q.selectionStart;keepScroll(()=>drawHistory());const n=document.querySelector("#histQ");if(n){n.focus();try{n.setSelectionRange(pos,pos);}catch(e){}}};
+  sh.onclick=ev=>{const b=ev.target.closest("button");if(!b)return;
+    if(b.dataset.x!=null){closeSheet();return;}
+    if(b.dataset.back!=null){openAdd(ADD_DAY);return;}
+    if(b.dataset.hs){HIST.sort=b.dataset.hs;HIST.shown=30;keepScroll(()=>drawHistory());return;}
+    if(b.dataset.hmore!=null){HIST.shown+=30;keepScroll(()=>drawHistory());return;}
+    if(b.dataset.hv!=null){const h=HIST.list[+b.dataset.hv];if(h)openReview([entryToItem(h.e)],{title:"Add again",info:"Your last amount is filled in. Change it if needed."});return;}
+    if(b.dataset.ha!=null){const h=HIST.list[+b.dataset.ha];if(!h)return;const day=ADD_DAY;closeSheet();TAB="today";document.querySelectorAll("nav.tabs [data-tab]").forEach(x=>x.classList.toggle("on",x.dataset.tab==="today"));if(day)VIEW_DAY=day;quickAdd(h.e,day);}
+  };
+}
 function browseCats(){
   const cats=FILTERS.map(([n,ids])=>[n,ids.map(foodById).filter(Boolean)]);
   if(S.custom.length)cats.unshift(["My foods",S.custom.map(c=>foodById("c_"+c.id)).filter(Boolean)]);
-  if(Object.values(S.days).some(es=>es&&es.length))cats.unshift(["Previously added",null]);
   return cats;
 }
 const portionLbl=f=>(f.def==="g"||f.def==="ml")?`100 ${f.def}`:`1 ${UNIT_LBL[f.def]||f.def}`;
@@ -1423,22 +1460,10 @@ const portionKcal=f=>calc({qty:(f.def==="g"||f.def==="ml")?100:1,unit:f.def,unit
 function bindBrowse(sh){
   const sr=sh.querySelector("#srIn"),res=sh.querySelector("#srRes"),catRow=sh.querySelector("#catRow"),sub=sh.querySelector("#subRow");
   const cats=browseCats();
-  let shown=[],prev=[];
-  if(browseCat===null&&cats[0]?.[0]==="Previously added")browseCat="Previously added";   // open on your own history
+  let shown=[];
   const draw=()=>{
     catRow.innerHTML=cats.map(([n])=>`<button class="chip ${browseCat===n?"on":""}" data-cat="${esc(n)}">${esc(n)}</button>`).join("");
     const q=sr.value.trim();
-    if(browseCat==="Previously added"){
-      const all=loggedHistory(),ql=q.toLowerCase().replace(/^\d+(\.\d+)?\s*\w*\s*/,"")||q.toLowerCase();
-      prev=q?all.filter(h=>h.e.name.toLowerCase().includes(ql)||ql.split(" ").every(w=>h.e.name.toLowerCase().includes(w))):all;
-      sub.innerHTML="";
-      res.innerHTML=(prev.length?prev.slice(0,60).map((h,i)=>`<div class="prevrow">
-        <button class="prevmain" data-prev="${i}"><span style="min-width:0"><b>${esc(h.e.name)}</b><br><span class="small muted num">${esc(shortQty(h.e))} · ${r0(h.e.n?.kcal)} kcal · ${r0(h.e.n?.p)} g P</span><br><span class="tiny muted">Last added ${agoLbl(h.day)}${h.count>1?" · "+h.count+" times":""}</span></span></button>
-        <button class="btn" data-prevadd="${i}" aria-label="Add ${esc(shortQty(h.e))} ${esc(h.e.name)} now">+ Add</button></div>`).join("")
-        :`<div class="empty">${q?"Nothing you've logged matches “"+esc(q)+"”.":"Foods you log will appear here."}</div>`)+
-        (q&&!prev.length&&SAMPLE?`<button data-ai><span><b>Ask AI about “${esc(q)}”</b><br><span class="small muted">For restaurant dishes or products not listed</span></span></button>`:"");
-      return;
-    }
     const inCat=browseCat?(cats.find(c=>c[0]===browseCat)?.[1]||[]):null;
     if(q){
       let hits=search(q.replace(/^\d+(\.\d+)?\s*\w*\s*/,"")||q,inCat?60:8);
@@ -1457,8 +1482,6 @@ function bindBrowse(sh){
     const b=ev.target.closest("button");if(!b)return;
     if(b.dataset.cat!=null){browseCat=browseCat===b.dataset.cat?null:b.dataset.cat;draw();return;}
     if(b.dataset.ai!=null){parseAndReview(sr.value.trim());return;}
-    if(b.dataset.prev!=null){const h=prev[+b.dataset.prev];if(h)openReview([entryToItem(h.e)],{title:"Add again",info:"Your last amount is filled in. Change it if needed."});return;}
-    if(b.dataset.prevadd!=null){const h=prev[+b.dataset.prevadd];if(!h)return;const day=ADD_DAY;closeSheet();TAB="today";document.querySelectorAll("nav.tabs [data-tab]").forEach(x=>x.classList.toggle("on",x.dataset.tab==="today"));if(day)VIEW_DAY=day;quickAdd(h.e,day);return;}
     if(b.dataset.hit!=null){
       const f=shown[+b.dataset.hit];if(!f)return;
       const q=sr.value.trim(),{items}=q?localParse(q):{items:[]};
