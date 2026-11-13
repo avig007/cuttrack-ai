@@ -1,0 +1,10 @@
+name: Smoke test packaged food search
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          for q in "amul protein" "epigamia greek yogurt" "yoga bar" "maggi" "haldiram bhujia"; do
+            echo "== $q"; curl -s -m 25 -G "https://cuttrack-ai-psi.vercel.app/api/products" --data-urlencode "q=$q" | head -c 900; echo
+          done
