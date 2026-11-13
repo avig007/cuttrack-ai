@@ -90,7 +90,8 @@ header.top h1{font-size:1.5rem;font-weight:700}
 .b-estimate{background:color-mix(in srgb,var(--carbs) 18%,transparent);color:var(--warn)}
 
 /* log */
-.meal h3{font-size:1.05rem;font-weight:700}
+.meal h3,.meal h2.h3{font-size:1.05rem;font-weight:700}
+.sheet h2[tabindex="-1"]:focus{outline:none}
 .entry{border-top:1px solid var(--line);padding-block:10px}
 .entry:first-of-type{border-top:0}
 .entry .head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;width:100%;background:none;border:0;padding:0;text-align:left}
@@ -112,7 +113,7 @@ input,select,textarea{font-size:16px!important}
 .savebtn[data-state="busy"]{opacity:.7}
 html,body,button,a,input,select,textarea,label{touch-action:manipulation}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
-input[type=text],input[type=number],input[type=date],select,textarea{width:100%;background:var(--surface-2);border:1px solid transparent;border-radius:12px;padding:11px 12px;min-height:44px}
+input[type=text],input[type=search],input[type=number],input[type=date],select,textarea{width:100%;background:var(--surface-2);border:1px solid transparent;border-radius:12px;padding:11px 12px;min-height:44px}
 input:focus,select:focus,textarea:focus{border-color:var(--accent);outline:none}
 textarea{resize:vertical;min-height:84px}
 .field{display:flex;flex-direction:column;gap:6px}
@@ -140,6 +141,29 @@ nav.tabs .add span.t{color:var(--muted)}
 .grab{width:40px;height:5px;border-radius:9px;background:var(--line);margin:0 auto 4px}
 @keyframes up{from{transform:translateY(30px);opacity:.6}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){.sheet{animation:none}.bar>i{transition:none}}
+.qstrip{display:flex;flex-direction:column;gap:6px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.qstrip.add{margin-top:0;padding-top:0;border-top:0}
+.qrow{display:flex;align-items:center;gap:8px;min-width:0}
+.qlbl{font-size:.72rem;font-weight:600;color:var(--muted);width:46px;flex:none;text-transform:uppercase;letter-spacing:.04em}
+.qrow .chips{flex:1;min-width:0}
+.chip.qp{font-size:.8rem;min-height:36px;padding:6px 11px;background:var(--surface-2);border-color:transparent}
+.linkbtn{background:none;border:0;color:var(--accent);font-weight:600;font-size:.85rem;padding:8px 4px;min-height:36px}
+.acts{display:grid;grid-template-columns:repeat(var(--n,3),1fr);gap:8px}
+.act{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:5px;font-size:.78rem;font-weight:600;min-height:64px;text-align:center;line-height:1.15}
+.act svg{width:22px;height:22px;color:var(--accent)}
+.seg{display:inline-flex;background:var(--surface-2);border-radius:10px;padding:3px;gap:2px}
+.seg button{border:0;background:none;border-radius:8px;padding:6px 10px;font-size:.8rem;font-weight:600;min-height:34px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.dbrow{border-bottom:1px solid var(--line);padding:2px 0 6px}
+.dbrow.on{background:var(--accent-soft);border-radius:12px}
+.results .dbrow .dbpick{border-bottom:0;width:100%;justify-content:flex-start;align-items:flex-start;gap:12px;padding:10px 6px}
+.tick{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--accent);color:var(--accent);display:grid;place-items:center;flex:none;font-weight:700}
+.dbrow.on .tick{background:var(--accent);color:var(--accent-ink)}
+.stores{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:0 6px 4px 46px}
+.ritem .stores{padding-left:0}
+.stores a{color:var(--accent);font-weight:600;font-size:.82rem;padding:6px 0;min-height:32px;display:inline-flex;align-items:center}
+.dbalt{display:flex;flex-wrap:wrap;gap:8px;padding-top:10px}
+.tray{position:sticky;bottom:calc(-20px - env(safe-area-inset-bottom,0px));margin:0 -16px calc(-20px - env(safe-area-inset-bottom,0px));padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 -6px 18px rgba(0,0,0,.08);z-index:2}
 .addbar{margin-top:12px;padding-top:10px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
 .chip.ic{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .chip.ic svg{width:16px;height:16px;color:var(--accent);flex:none}
@@ -239,8 +263,8 @@ input[type=time]{width:100%;font:inherit;background:var(--surface-2);border:1px 
   <button data-tab="profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Profile</button>
 </nav>
 
-<input type="file" id="camIn" accept="image/*" capture="environment" class="sr" aria-label="Take a photo">
-<input type="file" id="libIn" accept="image/*" class="sr" aria-label="Choose a photo">
+<input type="file" id="camIn" accept="image/*" capture="environment" class="sr" aria-label="Take a photo" tabindex="-1" aria-hidden="true">
+<input type="file" id="libIn" accept="image/*" class="sr" aria-label="Choose a photo" tabindex="-1" aria-hidden="true">
 
 <script>
 "use strict";
@@ -903,9 +927,9 @@ function fillRow(c,i,attr){
 }
 function fillCard(){
   const {R,list,total}=fillOptions(fillPage);FILL=list;
-  if(R.kcal<60)return `<section class="card stack" style="gap:8px"><h3 style="font-size:1.05rem">Options to include in diet</h3><p class="small" style="margin:0">You've reached today's calories. If you're still hungry, cucumber salad, chaas or green tea add almost nothing.</p></section>`;
+  if(R.kcal<60)return `<section class="card stack" style="gap:8px"><h2 class="h3" style="font-size:1.05rem">Options to include in diet</h2><p class="small" style="margin:0">You've reached today's calories. If you're still hungry, cucumber salad, chaas or green tea add almost nothing.</p></section>`;
   return `<section class="card stack" style="gap:10px">
-    <div class="row between" style="align-items:flex-start"><div style="min-width:0"><h3 style="font-size:1.05rem">Options to include in diet</h3><span class="small muted num">${r0(R.kcal)} kcal · ${r0(Math.max(R.p,0))} g protein · ${r0(Math.max(R.c,0))} g carbs · ${r0(Math.max(R.f,0))} g fat left</span></div>
+    <div class="row between" style="align-items:flex-start"><div style="min-width:0"><h2 class="h3" style="font-size:1.05rem">Options to include in diet</h2><span class="small muted num">${r0(R.kcal)} kcal · ${r0(Math.max(R.p,0))} g protein · ${r0(Math.max(R.c,0))} g carbs · ${r0(Math.max(R.f,0))} g fat left</span></div>
       ${total>4?`<button class="chip" data-act="fillrefresh" aria-label="Show other ideas">↻ Refresh</button>`:""}</div>
     ${list.length?list.map((c,i)=>fillRow(c,i,"data-fill")).join(""):`<p class="small muted" style="margin:0">Nothing in the database fits ${r0(R.kcal)} kcal neatly. A fruit or a glass of chaas works.</p>`}
     ${total>4?`<button class="btn block" data-act="fillmore">More options (${total})</button>`:""}
@@ -938,13 +962,6 @@ function drawMoreOptions(){
   };
 }
 
-function quickCard(){
-  const q=frequent(8);QUICK=q;
-  if(!q.length)return "";
-  return `<section class="stack" style="gap:8px"><div class="label">Quick add · your usual</div>
-    <div class="chips">${q.map((e,i)=>`<button class="chip" data-quick="${i}">+ ${esc(shortQty(e))} ${esc(shortName(e.name))}</button>`).join("")}</div></section>`;
-}
-let QUICK=[];
 function suggested(p){
   const s=p.sex==="female"?-161:5;
   const bmr=10*p.weight+6.25*p.height-5*p.age+s;
@@ -980,12 +997,13 @@ function render(){
 function badge(src){
   if(src==="label")return `<span class="badge b-verified">✓ From label</span>`;
   if(src==="custom")return `<span class="badge b-verified">My food</span>`;
+  if(src==="packaged")return `<span class="badge b-verified">Pack label</span>`;
   if(src==="manual")return `<span class="badge b-generic">Manual</span>`;
   if(src==="estimate")return `<span class="badge b-estimate">AI estimate</span>`;
   return `<span class="badge b-generic">Generic data</span>`;
 }
 function srcText(src,note){
-  const base={label:"Read from your nutrition label photo. Values as printed.",custom:"Your saved food or recipe.",manual:"Entered by you.",estimate:"AI estimate. Real values depend on recipe and portion.",generic:"Generic Indian food values (approximate, per 100 g/ml)."}[src]||"";
+  const base={label:"Read from your nutrition label photo. Values as printed.",custom:"Your saved food or recipe.",packaged:"Packaged product. Values per pack label (Open Food Facts).",manual:"Entered by you.",estimate:"AI estimate. Real values depend on recipe and portion.",generic:"Generic Indian food values (approximate, per 100 g/ml)."}[src]||"";
   return base+(note?" "+note:"");
 }
 function macroBar(lbl,v,t,col){const pct=Math.min(100,t?v/t*100:0);return `<div class="mrow"><div class="row"><span>${lbl}</span><span class="num"><b>${r0(v)}</b> / ${t} g</span></div><div class="bar"><i style="width:${pct}%;background:var(${col})"></i></div></div>`;}
@@ -1071,11 +1089,11 @@ function viewToday(){
       <div><div class="label">Calories</div><div class="num" style="font-weight:600">${r0(tot.kcal)} / ${t.kcal} kcal</div></div>
       ${macroBar("Protein",tot.p,t.p,"--protein")}${macroBar("Carbs",tot.c,t.c,"--carbs")}${macroBar("Fat",tot.f,t.f,"--fat")}
     </div></div>
+    ${quickStrip("home")}
     <div class="callout" style="margin-top:14px">${tip}</div>
     ${isT?`<div class="row" style="margin-top:10px"><button class="btn block" data-act="next">What should I eat next?</button></div>`:""}
   </section>
   ${isT?fillCard():""}
-  ${isT?quickCard():""}
   ${entriesCard(es,k)}
   ${late?`<section class="card"><div class="label">Today's summary</div><p style="margin:.4rem 0 0">${daySummary(tot)}</p></section>`:""}
   <p class="tiny muted">Nutrition numbers are estimates, not medical advice. Generic values are approximate; label scans are as printed.</p>
@@ -1087,29 +1105,17 @@ function daySummary(tot){
   const b=dp<=0?"Protein target hit.":dp<=10?`Protein was ${r0(dp)} g short, which is negligible.`:`Protein was ${r0(dp)} g short. A protein-forward breakfast tomorrow helps.`;
   return a+" "+b;
 }
-const ENTRY_ADD=[["type","mic","Say or type"],["prev","hist","Previously added"],["search","search","Search foods"],["cam","cam","Take photo"],["lib","img","Upload photo"],["label","label","Scan label"],["manual","pen","Quick add"]];
-// The Add screen's options, run straight from the entries card (for the day being viewed)
-function entryAdd(kind,k){
-  const day=k&&k!==today()?k:null;
-  if(kind==="type"||kind==="search"){openAdd(day);const f=document.querySelector(kind==="type"?"#nlIn":"#srIn");if(f){f.scrollIntoView({block:"center"});f.focus();}return;}
-  ADD_DAY=day;REPLACE=null;
-  if(kind==="prev")return openHistory();
-  if(kind==="cam")return pickPhoto("#camIn","auto");
-  if(kind==="lib")return pickPhoto("#libIn","auto");
-  if(kind==="label")return pickPhoto("#camIn","label");
-  if(kind==="manual")return openManual();
-}
+function entryAdd(kind,k){runAct(kind,k&&k!==today()?k:null,null);}
 function entriesCard(es,k=today()){
   const list=es.slice().sort((a,b)=>(a.loggedAt||0)-(b.loggedAt||0)),tot=sumN(list),t=T(),isT=k===today();
   const flags=Object.fromEntries(list.map(e=>[e.id,entryFlag(e,tot,t)]));
   const nSwap=Object.values(flags).filter(f=>f?.level==="swap").length,nWatch=Object.values(flags).filter(f=>f?.level==="watch").length;
   const overs=[tot.f>t.f?"fat":"",tot.c>t.c?"carbs":"",tot.kcal>t.kcal?"calories":""].filter(Boolean);
-  return `<section class="card meal"><div class="row between" style="flex-wrap:wrap"><h3>${isT?"Today's entries":"Entries · "+esc(dayLabel(k))}</h3><span class="small muted num">${list.length?list.length+" items · "+r0(tot.kcal)+" kcal · "+r0(tot.p)+" g P":""}</span></div>
+  return `<section class="card meal"><div class="row between" style="flex-wrap:wrap"><h2 class="h3">${isT?"Today's entries":"Entries · "+esc(dayLabel(k))}</h2><span class="small muted num">${list.length?list.length+" items · "+r0(tot.kcal)+" kcal · "+r0(tot.p)+" g P":""}</span></div>
   ${nSwap||nWatch?`<div class="flagsum small">${nSwap?`<span class="badge b-swap">${nSwap} to swap</span> `:""}${nWatch?`<span class="badge b-watch">${nWatch} to watch</span> `:""}<span class="muted">${overs.length?`${isT?"Today is":"This day was"} over on ${overs.join(" and ")}. Tagged items are the biggest contributors.`:"Tagged items are out of balance for your targets. Tap one for a swap idea."}</span></div>`:""}
   <div style="margin-top:6px">${list.length?list.map(e=>entryRow(e,flags[e.id])).join(""):`<div class="empty">Nothing logged ${isT?"yet today":"on this day"}.</div>`}</div>
   ${list.length?`<div class="tiny muted" style="margin-top:6px">Tap an entry to edit it.</div>`:""}
-  <div class="addbar"><span class="label">Add to ${isT?"today":esc(dayLabel(k))}</span>
-    <div class="chips">${ENTRY_ADD.filter(([id])=>id!=="prev"||loggedHistory().length).map(([id,ic,l])=>`<button class="chip ic" data-eadd="${id}">${ico[ic]}${l}</button>`).join("")}</div></div></section>`;
+  <div class="addbar"><span class="label">Add to ${isT?"today":esc(dayLabel(k))}</span>${actGrid(["type","db","cam","lib","label","manual"],"eadd")}</div></section>`;
 }
 const timeOf=ts=>ts?new Date(ts).toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"}):"";
 function qtyLbl(e){const u=UNIT_LBL[e.unit]||e.unit;return (e.unit==="g"||e.unit==="ml")?`${r0(e.qty)} ${u}`:`${r1(e.qty)} ${u} · ${r0(gramsOf(e))} ${e.units?.ml?"ml":"g"}`;}
@@ -1342,7 +1348,8 @@ function bindView(){
     if(d.eadd){entryAdd(d.eadd,VIEW_DAY);return;}
     if(d.del){const k=VIEW_DAY;S.days[k]=dayEntries(k).filter(e=>e.id!==d.del);Store.saveDay(k);openEntry=null;render();toast("Deleted");return;}
     if(d.dup){const k=VIEW_DAY,e=dayEntries(k).find(x=>x.id===d.dup);if(e){S.days[k].push({...structuredClone(e),id:uid(),loggedAt:stampFor(k)});Store.saveDay(k);render();toast("Duplicated");}return;}
-    if(d.quick!=null){const e=QUICK[+d.quick];if(e)quickAdd(e);return;}
+    if(d.qp){const e=qpPick(d.qp);if(e)quickAdd(e,VIEW_DAY!==today()?VIEW_DAY:null);return;}
+    if(d.qall!=null){ADD_DAY=VIEW_DAY!==today()?VIEW_DAY:null;REPLACE=null;openHistory();return;}
     if(d.fill!=null){const c=FILL[+d.fill];if(c)openReview(c.items.map(i=>({...i})),{title:c.name,info:"Adjust amounts if needed, then add."});return;}
     if(d.range){histRange=+d.range;render();return;}
     if(d.day){histOpen=histOpen===d.day?null:d.day;render();return;}
@@ -1384,45 +1391,78 @@ function bindView(){
 
 /* ---------- Sheets ---------- */
 let NOANIM=false;
-function sheet(html){closeSheet();const sc=document.createElement("div");sc.className="scrim";sc.onclick=closeSheet;const sh=document.createElement("div");sh.className="sheet";if(NOANIM)sh.style.animation="none";sh.setAttribute("role","dialog");sh.innerHTML=`<div class="inner"><div class="grab"></div>${html}</div>`;document.body.append(sc,sh);return sh;}
-function closeSheet(){if(typeof stopVoice==="function")stopVoice();document.querySelectorAll(".scrim,.sheet").forEach(x=>x.remove());}
+let LASTF=null;
+function sheet(html){if(!document.querySelector(".sheet"))LASTF=document.activeElement;closeSheet(true);const sc=document.createElement("div");sc.className="scrim";sc.onclick=closeSheet;const sh=document.createElement("div");sh.className="sheet";if(NOANIM)sh.style.animation="none";sh.setAttribute("role","dialog");sh.setAttribute("aria-modal","true");sh.innerHTML=`<div class="inner"><div class="grab"></div>${html}</div>`;const h=sh.querySelector("h2");if(h){h.id=h.id||"sh_"+uid();sh.setAttribute("aria-labelledby",h.id);}document.body.append(sc,sh);if(!NOANIM){const f=sh.querySelector("h2");if(f){f.tabIndex=-1;f.focus({preventScroll:true});}}return sh;}
+function closeSheet(keep){if(typeof stopVoice==="function")stopVoice();document.querySelectorAll(".scrim,.sheet").forEach(x=>x.remove());if(keep!==true&&LASTF&&document.contains(LASTF)){try{LASTF.focus({preventScroll:true});}catch(e){}LASTF=null;}}
 const ico={type:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h10M4 17h13"/></svg>',cam:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',img:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/></svg>',label:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>',search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>',mic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',hist:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>',pen:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>'};
+
+/* ---------- Quick picks: recent and most-often foods (home + Add screen) ---------- */
+let QP={recent:[],often:[]};
+function quickPicks(n=6){
+  const key=e=>String(e.foodId||("x:"+e.name)).toLowerCase();
+  const recent=loggedHistory().map(h=>h.e).slice(0,n),keys=new Set(recent.map(key));
+  const often=frequent(n*2).filter(e=>!keys.has(key(e))).slice(0,n);
+  QP={recent,often};return QP;
+}
+function quickStrip(where){
+  const {recent,often}=quickPicks(where==="home"?5:8);
+  if(!recent.length&&!often.length)return "";
+  const row=(lbl,list,key)=>list.length?`<div class="qrow"><span class="qlbl">${lbl}</span><div class="chips scroll">${list.map((e,i)=>`<button class="chip qp" data-qp="${key}:${i}" aria-label="Add ${esc(shortQty(e))} ${esc(shortName(e.name))}, ${r0(e.n?.kcal)} kcal">+ ${esc(shortQty(e))} ${esc(shortName(e.name))}</button>`).join("")}</div></div>`:"";
+  return `<div class="qstrip ${where}">
+    <div class="row between"><span class="label">${where==="home"?"Quick add":"Tap to add again"}</span><button class="linkbtn" data-qall>See all</button></div>
+    ${row("Recent",recent,"r")}${row("Often",often,"o")}</div>`;
+}
+const qpPick=v=>{const [k,i]=String(v).split(":");return (k==="o"?QP.often:QP.recent)[+i];};
+
+/* ---------- One set of add actions, used on the Add screen, the entries card and the edit screen ---------- */
+const ACTS={type:["mic","Speak or type"],db:["search","Food database"],prev:["hist","Previous"],cam:["cam","Take photo"],lib:["img","Upload photo"],label:["label","Scan label"],manual:["pen","Quick add"]};
+const actGrid=(keys,attr)=>`<div class="acts" style="--n:${keys.length===4?4:3}">${keys.map(k=>`<button class="act" data-${attr}="${k}">${ico[ACTS[k][0]]}<span>${ACTS[k][1]}</span></button>`).join("")}</div>`;
+function runAct(kind,day,rep){
+  if(kind==="type"||kind==="db"){openAdd(day,rep);const f=document.querySelector(kind==="type"?"#nlIn":"#srIn");if(f){f.scrollIntoView({block:"center"});f.focus();}return;}
+  ADD_DAY=day&&day!==today()?day:null;REPLACE=rep||null;
+  if(kind==="prev")return openHistory();
+  if(kind==="cam")return pickPhoto("#camIn","auto");
+  if(kind==="lib")return pickPhoto("#libIn","auto");
+  if(kind==="label")return pickPhoto("#camIn","label");
+  if(kind==="manual")return openManual();
+}
+function goToday(day){TAB="today";document.querySelectorAll("nav.tabs [data-tab]").forEach(x=>x.classList.toggle("on",x.dataset.tab==="today"));if(day)VIEW_DAY=day;}
 
 function openAdd(day,rep){
   ADD_DAY=day&&day!==today()?day:null;REPLACE=rep||null;
-  const usual=frequent(8);
-  const sh=sheet(`<div class="row between"><h2 style="font-size:1.4rem">${REPLACE?"Replace "+esc(shortName(REPLACE.name)):ADD_DAY?"Add to "+esc(dayLabel(ADD_DAY)):"What did you eat?"}</h2><button class="btn ghost" data-x aria-label="Close">Close</button></div>
-  ${REPLACE?`<div class="callout small">Pick anything below the way you'd add food. It takes the place of <b>${esc(qtyLbl(REPLACE))} ${esc(REPLACE.name)}</b> at ${esc(timeOf(REPLACE.loggedAt))}.</div>`:""}
-  ${usual.length?`<div class="stack" style="gap:6px"><span class="label">Your usual · one tap ${REPLACE?"picks":"adds"}</span><div class="chips scroll" id="usualRow">${usual.map((e,i)=>`<button class="chip" data-u="${i}">+ ${esc(shortQty(e))} ${esc(shortName(e.name))}</button>`).join("")}</div></div>`:""}
+  const sh=sheet(`<div class="row between"><h2 id="sheetTitle" style="font-size:1.4rem">${REPLACE?"Replace "+esc(shortName(REPLACE.name)):ADD_DAY?"Add to "+esc(dayLabel(ADD_DAY)):"Add food"}</h2><button class="btn ghost" data-x>Close</button></div>
+  ${REPLACE?`<div class="callout small">Pick anything below. It takes the place of <b>${esc(qtyLbl(REPLACE))} ${esc(REPLACE.name)}</b> at ${esc(timeOf(REPLACE.loggedAt))}.</div>`:""}
+  ${quickStrip("add")}
   <div class="field"><label class="label" for="nlIn">Say it or type it</label>
   <div class="nlbox"><textarea id="nlIn" placeholder="6 eggs, 4 slices brown bread and a banana"></textarea><button class="mic" id="micBtn" type="button" aria-pressed="false" aria-label="Speak what you ate">${ico.mic}<span>Speak</span></button></div>
   <div class="callout small" id="micMsg" role="status" hidden></div>
   <div id="nlLive" aria-live="polite" class="stack" style="gap:6px"></div>
-  <button class="btn primary block" id="nlGo">Work it out</button><span class="tiny muted" id="nlNote">${SAMPLE?"Speak or type naturally. AI identifies each food, then values come from the food database.":"Using the built-in parser. Sign in to let AI read anything it doesn't know."}</span></div>
-  <div class="field" id="browse"><label class="label" for="srIn">Search or browse foods</label><input type="text" id="srIn" placeholder="Search: paneer, sourdough, chicken breast…" autocomplete="off">
-    <div class="chips scroll" id="catRow" aria-label="Food types"></div><div id="subRow"></div><div class="results" id="srRes"></div></div>
-  <div class="opts">
-    ${loggedHistory().length?`<button class="opt wide" id="oPrev">${ico.hist}<span style="display:flex;flex-direction:column;gap:2px;text-align:left;color:var(--fg);font-size:inherit"><b>Previously added</b><span>Pick from ${loggedHistory().length} foods you've logged before</span></span></button>`:""}
-    <button class="opt" id="oCam">${ico.cam}<b>Take photo</b><span>Meal, pack or label</span></button>
-    <button class="opt" id="oLib">${ico.img}<b>Upload photo</b><span>From your library</span></button>
-    <button class="opt" id="oLabel">${ico.label}<b>Scan label</b><span>Exact values from the pack</span></button>
-    <button class="opt" id="oManual">${ico.pen}<b>Quick add</b><span>Type kcal and macros</span></button>
-  </div>
-  <p class="tiny muted" style="margin:0">iPhone browsers can't scan barcodes yet. Photograph the nutrition label instead; it's more accurate for Indian packs anyway.</p>`);
+  <button class="btn primary block" id="nlGo">Work it out</button><span class="tiny muted" id="nlNote">${SAMPLE?"AI identifies each food, then values come from the food database.":"Using the built-in parser. Sign in to let AI read anything it doesn't know."}</span></div>
+  ${actGrid(["cam","lib","label","manual"],"aact")}
+  <div class="field" id="browse"><div class="row between"><h3 class="label" style="margin:0">Food database</h3>
+    <div class="seg" role="group" aria-label="Which database"><button data-src="foods" aria-pressed="true">Foods</button><button data-src="packs" aria-pressed="false">Packaged brands</button></div></div>
+    <input type="search" id="srIn" placeholder="Search: paneer, sourdough, chicken breast…" autocomplete="off" aria-label="Search the food database">
+    <div class="chips scroll" id="catRow" aria-label="Food types"></div>
+    <div id="srInfo" class="tiny muted" aria-live="polite"></div>
+    <div class="results" id="srRes"></div></div>
+  <div class="tray" id="tray" aria-live="polite" hidden></div>`);
+  sh.setAttribute("aria-labelledby","sheetTitle");
   sh.querySelector("[data-x]").onclick=closeSheet;
   sh.querySelector("#nlGo").onclick=()=>{stopVoice();parseAndReview(sh.querySelector("#nlIn").value);};
   bindVoice(sh);
-  sh.querySelector("#oCam").onclick=()=>pickPhoto("#camIn","auto");
-  sh.querySelector("#oLib").onclick=()=>pickPhoto("#libIn","auto");
-  sh.querySelector("#oLabel").onclick=()=>pickPhoto("#camIn","label");
-  sh.querySelector("#oManual").onclick=()=>openManual();
-  const op=sh.querySelector("#oPrev");if(op)op.onclick=()=>openHistory();
+  sh.addEventListener("click",ev=>{const b=ev.target.closest("button");if(!b)return;
+    if(b.dataset.aact){runAct(b.dataset.aact,ADD_DAY,REPLACE);return;}
+    if(b.dataset.qall!=null){openHistory();return;}
+    if(b.dataset.qp){const e=qpPick(b.dataset.qp);if(!e)return;
+      if(REPLACE){openReview([entryToItem(e)],{title:"Replace with"});return;}
+      const d=ADD_DAY;closeSheet();goToday(d);quickAdd(e,d);}
+  });
   bindBrowse(sh);
-  const ur=sh.querySelector("#usualRow");if(ur)ur.onclick=ev=>{const b=ev.target.closest("button[data-u]");if(!b)return;const e=usual[+b.dataset.u];if(!e)return;if(REPLACE){openReview([entryToItem(e)],{title:"Replace with"});return;}const day=ADD_DAY;closeSheet();TAB="today";document.querySelectorAll("nav.tabs [data-tab]").forEach(x=>x.classList.toggle("on",x.dataset.tab==="today"));if(day)VIEW_DAY=day;quickAdd(e,day);};
 }
 
-/* Browse foods by category (Add sheet) */
-let browseCat=null;
+/* ---------- Food database: browse by type, search, pick several, or search packaged brands ---------- */
+let browseCat=null,DBSRC="foods";
+const PICK=new Map();   // id -> item, across categories and searches
 function foodById(id){
   if(String(id).startsWith("c_")){const c=S.custom.find(x=>"c_"+x.id===id);return c?{...c,_id:id,_label:(c.brand?c.brand+" ":"")+c.name}:null;}
   const f=FOODS.find(x=>x.id===id);return f?{...f,_id:f.id,_label:f.name}:null;
@@ -1477,42 +1517,93 @@ function drawHistory(first){
 function browseCats(){
   const cats=FILTERS.map(([n,ids])=>[n,ids.map(foodById).filter(Boolean)]);
   if(S.custom.length)cats.unshift(["My foods",S.custom.map(c=>foodById("c_"+c.id)).filter(Boolean)]);
+  cats.push(["All A–Z",allFoods().slice().sort((a,b)=>a._label.localeCompare(b._label))]);
   return cats;
 }
 const portionLbl=f=>(f.def==="g"||f.def==="ml")?`100 ${f.def}`:`1 ${UNIT_LBL[f.def]||f.def}`;
-const portionKcal=f=>calc({qty:(f.def==="g"||f.def==="ml")?100:1,unit:f.def,units:f.units,per100:f.per}).kcal;
+const portionN=f=>calc({qty:(f.def==="g"||f.def==="ml")?100:1,unit:f.def,units:f.units,per100:f.per});
+const portionKcal=f=>portionN(f).kcal;
+const STORES=[["Blinkit","https://blinkit.com/s/?q="],["Zepto","https://www.zepto.com/search?query="],["Instamart","https://www.swiggy.com/instamart/search?custom_back=true&query="]];
+const storeLinks=q=>`<span class="stores"><span class="tiny muted">Check on</span>${STORES.map(([n,u])=>`<a href="${u+encodeURIComponent(q)}" target="_blank" rel="noopener" aria-label="Check ${esc(q)} on ${n} (opens ${n})">${n}</a>`).join("")}</span>`;
+// A packaged product (Open Food Facts) -> a food the app understands
+function packToFood(p){
+  const base=p.ml?"ml":"g",units={[base]:1};let def=base;
+  if(p.servingG&&p.servingG<2000){units.serving=p.servingG;def="serving";}
+  if(p.packG&&p.packG<=400){units.pack=p.packG;def="pack";}
+  const label=(p.brand&&!p.name.toLowerCase().includes(p.brand.toLowerCase())?p.brand+" ":"")+p.name;
+  return {_id:"off:"+(p.code||label),_label:label,name:p.name,brand:p.brand,units,def,per:p.per100,src:"packaged",note:`Label values shared on Open Food Facts${p.quantity?" · pack "+p.quantity:""}. Check against your pack.`,_pack:p};
+}
+function pickItem(f){
+  const it=foodToItem(f);
+  if(f.src==="packaged")it._save={brand:f.brand&&!f.name.toLowerCase().includes(f.brand.toLowerCase())?f.brand:"",name:f.name,units:f.units,def:f.def,per:f.per,src:"packaged"};
+  return it;
+}
+let PACKS={q:"",list:[],busy:false,err:"",t:null};
+async function packSearch(q,redraw){
+  PACKS.q=q;PACKS.err="";if(q.length<2){PACKS.list=[];redraw();return;}
+  PACKS.busy=true;redraw();
+  try{
+    const r=await fetch("/api/products?q="+encodeURIComponent(q));const j=await r.json().catch(()=>({}));
+    if(PACKS.q!==q)return;
+    if(!r.ok)throw new Error(j.error||"Search failed");
+    PACKS.list=(j.products||[]).map(packToFood);
+  }catch(e){if(PACKS.q===q){PACKS.list=[];PACKS.err=navigator.onLine?(e.message||"Search failed"):"You're offline. Packaged search needs internet.";}}
+  if(PACKS.q===q){PACKS.busy=false;redraw();}
+}
 function bindBrowse(sh){
-  const sr=sh.querySelector("#srIn"),res=sh.querySelector("#srRes"),catRow=sh.querySelector("#catRow"),sub=sh.querySelector("#subRow");
-  const cats=browseCats();
-  let shown=[];
-  const draw=()=>{
-    catRow.innerHTML=cats.map(([n])=>`<button class="chip ${browseCat===n?"on":""}" data-cat="${esc(n)}">${esc(n)}</button>`).join("");
-    const q=sr.value.trim();
-    const inCat=browseCat?(cats.find(c=>c[0]===browseCat)?.[1]||[]):null;
-    if(q){
-      let hits=search(q.replace(/^\d+(\.\d+)?\s*\w*\s*/,"")||q,inCat?60:8);
-      if(inCat){const ids=new Set(inCat.map(f=>f._id));hits=hits.filter(f=>ids.has(f._id)).slice(0,10);}
-      shown=hits;sub.innerHTML="";
-      res.innerHTML=hits.map((f,i)=>`<button data-hit="${i}"><span style="min-width:0"><b>${esc(f._label)}</b><br><span class="small muted">${portionLbl(f)} · ${portionKcal(f)} kcal</span></span>${badge(f.src)}</button>`).join("")+
-        (SAMPLE?`<button data-ai><span><b>Ask AI about “${esc(q)}”</b><br><span class="small muted">For restaurant dishes or products not listed</span></span></button>`:"")+
-        (!hits.length&&!SAMPLE?`<div class="empty">No match${browseCat?" in "+esc(browseCat):""}. Try another name or use Quick add.</div>`:"");
-    }else if(inCat){
-      shown=inCat;res.innerHTML="";
-      sub.innerHTML=`<div class="chips">${inCat.map((f,i)=>`<button class="chip sub" data-hit="${i}">${esc(shortName(f._label))}<span class="tiny muted num"> ${portionKcal(f)} kcal</span></button>`).join("")}</div>`;
-    }else{shown=[];res.innerHTML="";sub.innerHTML="";}
+  const sr=sh.querySelector("#srIn"),res=sh.querySelector("#srRes"),catRow=sh.querySelector("#catRow"),info=sh.querySelector("#srInfo"),tray=sh.querySelector("#tray");
+  const cats=browseCats();let shown=[],limit=30;
+  const row=(f,i)=>{const n=portionN(f),on=PICK.has(f._id),p=f._pack;
+    return `<div class="dbrow ${on?"on":""}"><button class="dbpick" data-hit="${i}" aria-pressed="${on}" aria-label="${on?"Selected: ":"Select "}${esc(f._label)}, ${portionLbl(f)}, ${n.kcal} kcal, ${r0(n.p)} grams protein">
+      <span class="tick" aria-hidden="true">${on?"✓":"+"}</span>
+      <span style="min-width:0;flex:1"><b>${esc(f._label)}</b><br><span class="small muted num">${p?`per 100 ${f.units.ml?"ml":"g"} · ${r0(f.per.kcal)} kcal · ${r1(f.per.p)} P · ${r1(f.per.c)} C · ${r1(f.per.f)} F`:`${portionLbl(f)} · ${n.kcal} kcal · ${r0(n.p)} P · ${r0(n.c)} C · ${r0(n.f)} F`}</span>${p&&p.quantity?`<br><span class="tiny muted">Pack: ${esc(p.quantity)}</span>`:""}</span></button>
+      ${p?storeLinks(f._label):""}</div>`;};
+  const drawTray=()=>{
+    if(!PICK.size){tray.hidden=true;tray.innerHTML="";return;}
+    const tot=sumN([...PICK.values()].map(it=>({n:calc(it)})));
+    tray.hidden=false;tray.innerHTML=`<span class="small"><b>${PICK.size} selected</b> · <span class="num">${tot.kcal} kcal · ${r0(tot.p)} g P</span></span><span class="row" style="gap:8px"><button class="btn ghost" data-clear>Clear</button><button class="btn primary" data-review>Review & add</button></span>`;
   };
-  sr.oninput=draw;
+  const draw=()=>{
+    sh.querySelectorAll("[data-src]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.src===DBSRC)));
+    sr.placeholder=DBSRC==="packs"?"Brand or product: Amul protein, Yoga Bar…":"Search: paneer, sourdough, chicken breast…";
+    const q=sr.value.trim();
+    if(DBSRC==="packs"){
+      catRow.innerHTML="";catRow.hidden=true;shown=PACKS.list;
+      info.innerHTML=PACKS.busy?`<span class="spin"></span> Searching packaged foods…`:PACKS.err?esc(PACKS.err):q.length<2?"Search brands sold on Blinkit, Zepto and Instamart. Values come from pack labels shared on Open Food Facts.":shown.length?`${shown.length} products · tap to select`:`No packaged match for “${esc(q)}”. Try the brand name, or Scan label.`;
+      res.innerHTML=shown.map(row).join("");drawTray();return;
+    }
+    catRow.hidden=false;
+    catRow.innerHTML=cats.map(([n])=>`<button class="chip ${browseCat===n?"on":""}" data-cat="${esc(n)}" aria-pressed="${browseCat===n}">${esc(n)}</button>`).join("");
+    const inCat=browseCat?(cats.find(c=>c[0]===browseCat)?.[1]||[]):null;let note="";
+    if(q){let hits=search(q.replace(/^\d+(\.\d+)?\s*\w*\s*/,"")||q,inCat?80:12);
+      let wide=false;
+      if(inCat){const ids=new Set(inCat.map(f=>f._id)),inner=hits.filter(f=>ids.has(f._id)).slice(0,12);if(inner.length)hits=inner;else{wide=true;hits=hits.slice(0,12);}}
+      shown=hits;note=wide?`Nothing in ${browseCat} matches. Showing all foods.`:"";}
+    else shown=inCat||[];
+    info.textContent=!q&&!inCat?"Pick a type or search. Tap foods to select several, then add them together.":note||(shown.length?`${shown.length} food${shown.length>1?"s":""}${browseCat?" in "+browseCat:""}`:"No match in the food database.");
+    res.innerHTML=shown.slice(0,limit).map(row).join("")+(shown.length>limit?`<button class="btn block" data-more>Show more (${shown.length-limit})</button>`:"")+
+      (q?`<div class="dbalt">${SAMPLE?`<button class="chip" data-ai>Ask AI about “${esc(q)}”</button>`:""}<button class="chip" data-topacks>Search packaged brands for “${esc(q)}”</button></div>`:"");
+    drawTray();
+  };
+  sr.oninput=()=>{limit=30;if(DBSRC==="packs"){clearTimeout(PACKS.t);const q=sr.value.trim();PACKS.t=setTimeout(()=>packSearch(q,draw),450);}draw();};
   sh.querySelector("#browse").onclick=ev=>{
     const b=ev.target.closest("button");if(!b)return;
-    if(b.dataset.cat!=null){browseCat=browseCat===b.dataset.cat?null:b.dataset.cat;draw();return;}
+    if(b.dataset.src){DBSRC=b.dataset.src;limit=30;if(DBSRC==="packs"&&sr.value.trim()!==PACKS.q)packSearch(sr.value.trim(),draw);draw();sr.focus();return;}
+    if(b.dataset.cat!=null){browseCat=browseCat===b.dataset.cat?null:b.dataset.cat;limit=30;draw();return;}
+    if(b.dataset.more!=null){limit+=30;draw();return;}
     if(b.dataset.ai!=null){parseAndReview(sr.value.trim());return;}
-    if(b.dataset.hit!=null){
-      const f=shown[+b.dataset.hit];if(!f)return;
-      const q=sr.value.trim(),{items}=q?localParse(q):{items:[]};
-      const p=items.length===1&&items[0].foodId===f._id?items[0]:null;
-      openReview([p||foodToItem(f)],{title:"Add food"});
-    }
+    if(b.dataset.topacks!=null){DBSRC="packs";packSearch(sr.value.trim(),draw);draw();return;}
+    if(b.dataset.hit!=null){const f=shown[+b.dataset.hit];if(!f)return;
+      if(PICK.has(f._id))PICK.delete(f._id);
+      else{const q=sr.value.trim(),{items}=q&&DBSRC==="foods"?localParse(q):{items:[]};const p=items.length===1&&items[0].foodId===f._id?items[0]:null;PICK.set(f._id,p||pickItem(f));}
+      const y=sh.scrollTop;draw();sh.scrollTop=y;
+      const nb=res.querySelector(`[data-hit="${b.dataset.hit}"]`);if(nb)nb.focus({preventScroll:true});}
   };
+  tray.onclick=ev=>{const b=ev.target.closest("button");if(!b)return;
+    if(b.dataset.clear!=null){PICK.clear();draw();return;}
+    if(b.dataset.review!=null){const items=[...PICK.values()];PICK.clear();openReview(items,{title:REPLACE?"Replace with":items.length>1?`Add ${items.length} foods`:"Add food",info:"Set the amount for each, then add."});}
+  };
+  if(DBSRC==="packs"&&PACKS.q!==sr.value.trim())PACKS={q:"",list:[],busy:false,err:"",t:null};
   draw();
 }
 
@@ -1631,14 +1722,16 @@ function drawReview(){
     ${portionChips(it,i)}
     <div class="qty"><input type="number" inputmode="decimal" step="any" min="0" value="${r1(it.qty)}" data-rq="${i}" aria-label="Quantity of ${esc(it.name)}"><select data-ru="${i}" aria-label="Unit">${Object.keys(it.units).map(u=>`<option value="${u}" ${u===it.unit?"selected":""}>${UNIT_LBL[u]||u}${u!=="g"&&u!=="ml"?" ("+it.units[u]+(it.units.ml?" ml":" g")+")":""}</option>`).join("")}</select></div>
     ${it.note||it.source!=="generic"?`<div class="tiny muted">${esc(srcText(it.source,it.note))}</div>`:""}
+    ${it.source==="packaged"||it.source==="label"||(it.source==="custom"&&it.name)?storeLinks(it.name):""}
     <div class="row between"><span class="tiny muted num">${r0(gramsOf(it))} ${it.units.ml?"ml":"g"} total</span><button class="chip" data-rm="${i}">Remove</button></div>
   </div>`}).join("")}
   ${R.items.length>1?`<details><summary class="small" style="cursor:pointer">Save these together as a recipe</summary><div class="row" style="margin-top:8px"><input type="text" id="recName" placeholder="e.g. Chicken rice bowl" aria-label="Recipe name"><button class="btn" id="recSave">Save</button></div></details>`:""}
   <div class="totals">
     <div class="tot num"><div><b>${tot.kcal}</b><span class="tiny muted">kcal</span></div><div><b style="color:var(--protein)">${r0(tot.p)}</b><span class="tiny muted">protein g</span></div><div><b style="color:var(--carbs)">${r0(tot.c)}</b><span class="tiny muted">carbs g</span></div><div><b style="color:var(--fat)">${r0(tot.f)}</b><span class="tiny muted">fat g</span></div></div>
-    <div class="row"><button class="btn primary" style="flex:1" id="rAdd" ${R.items.length?"":"disabled"}>${REPLACE?"Replace entry":ADD_DAY?"Add to "+esc(dayLabel(ADD_DAY)):"Add to today"}</button></div>
+    <div class="row"><button class="btn" id="rMore" aria-label="Pick more foods">+ More</button><button class="btn primary" style="flex:1" id="rAdd" ${R.items.length?"":"disabled"}>${REPLACE?"Replace entry":ADD_DAY?"Add to "+esc(dayLabel(ADD_DAY)):"Add to today"}</button></div>
   </div>`);
   sh.querySelector("[data-x]").onclick=closeSheet;
+  sh.querySelector("#rMore").onclick=()=>{R.items.forEach(it=>PICK.set(it.foodId?String(it.foodId):"r:"+it._id,it));openAdd(ADD_DAY,REPLACE);const f=document.querySelector("#srIn");if(f)f.scrollIntoView({block:"center"});};
   sh.onclick=ev=>{const b=ev.target.closest("button");if(!b)return;
     if(b.dataset.pq){const [i,q]=b.dataset.pq.split(":");R.items[+i].qty=+q;R.items[+i].uncertain=false;keepScroll(drawReview);}
     if(b.dataset.rm!=null){R.items.splice(+b.dataset.rm,1);keepScroll(drawReview);}
@@ -1658,7 +1751,7 @@ function drawReview(){
     const rep=REPLACE,k=rep?rep.day:(ADD_DAY||today());S.days[k]=dayEntries(k);const stamp=rep?(rep.loggedAt||stampFor(k)):stampFor(k);
     if(rep)S.days[k]=S.days[k].filter(x=>x.id!==rep.id);
     R.items.forEach((it,ix)=>{
-      if(it._save&&!S.custom.some(c=>c.name===it._save.name&&c.brand===it._save.brand)){const id=uid();S.custom.unshift({id,...it._save,src:"label",note:it.note||"",aliases:[it._save.name],savedAt:Date.now()});it.foodId="c_"+id;Store.saveMeta();}
+      if(it._save&&!S.custom.some(c=>c.name===it._save.name&&c.brand===it._save.brand)){const id=uid();S.custom.unshift({id,...it._save,src:it._save.src||"label",note:it.note||"",aliases:[it._save.name],savedAt:Date.now()});it.foodId="c_"+id;Store.saveMeta();}
       const e={id:uid(),name:it.name,foodId:it.foodId,qty:it.qty,unit:it.unit,units:it.units,per100:it.per100,source:it.source,note:it.note||"",loggedAt:stamp+ix};
       e.n=calc(e);S.days[k].push(e);
     });
@@ -1683,7 +1776,7 @@ function openEdit(id,k){
     <span class="tiny muted" id="edHint">Change the amount and these update. Change a number here to correct it; the food's values are adjusted to match.</span></div>
   <button class="btn primary block" id="edSave">Save changes</button>
   <div class="field"><span class="label">Or replace it with something else</span>
-    <div class="chips">${ENTRY_ADD.filter(([id])=>id!=="prev"||loggedHistory().length).map(([id,ic,l])=>`<button class="chip ic" data-rep="${id}">${ico[ic]}${l}</button>`).join("")}</div>
+    ${actGrid(["type","prev","db","cam","label","manual"],"rep")}
     <span class="tiny muted">Uses the same options as the Add screen. The new food keeps this entry's time.</span></div>
   <div class="row"><button class="btn" style="flex:1" id="edDup">Duplicate</button><button class="btn danger" style="flex:1" id="edDel">Delete</button></div>`);
   const $s=q=>sh.querySelector(q),grams=()=>gramsOf(W);
@@ -1705,10 +1798,7 @@ function openEdit(id,k){
   $s("#edDup").onclick=()=>{S.days[k]=dayEntries(k);S.days[k].push({...structuredClone(e),id:uid(),loggedAt:stampFor(k)});Store.saveDay(k);closeSheet();render();toast("Duplicated");};
   $s("#edDel").onclick=()=>{S.days[k]=dayEntries(k).filter(x=>x.id!==id);Store.saveDay(k);closeSheet();openEntry=null;render();toast("Deleted");};
   sh.addEventListener("click",ev=>{const b=ev.target.closest("[data-rep]");if(!b)return;
-    const rep={...e,day:k},kind=b.dataset.rep,day=k!==today()?k:null;
-    if(kind==="type"||kind==="search"){openAdd(day,rep);const f=document.querySelector(kind==="type"?"#nlIn":"#srIn");if(f){f.scrollIntoView({block:"center"});f.focus();}return;}
-    ADD_DAY=day;REPLACE=rep;
-    if(kind==="prev")openHistory();else if(kind==="cam")pickPhoto("#camIn","auto");else if(kind==="lib")pickPhoto("#libIn","auto");else if(kind==="label")pickPhoto("#camIn","label");else if(kind==="manual")openManual();
+    runAct(b.dataset.rep,k!==today()?k:null,{...e,day:k});
   });
 }
 function openManual(){

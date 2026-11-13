@@ -9,6 +9,14 @@ const cache = new Map();
 
 const num = (v) => { const n = typeof v === "string" ? parseFloat(v) : v; return Number.isFinite(n) ? Math.round(n * 10) / 10 : null; };
 
+// "200gm", "1L", "62 Gram", "1 kg" -> grams/ml (single packs only; "6 x 40 g" is skipped)
+function packFrom(q) {
+  const m = String(q || "").toLowerCase().match(/^\s*(\d+(?:[.,]\d+)?)\s*(kg|kilo\w*|g|gm|gms|gram\w*|ml|l|litre\w*|liter\w*)\b/);
+  if (!m || /x|\*/.test(q)) return null;
+  const v = parseFloat(m[1].replace(",", "."));
+  return Math.round(/^k|^l/.test(m[2]) ? v * 1000 : v) || null;
+}
+
 function norm(p) {
   const n = p.nutriments || {};
   let kcal = num(n["energy-kcal_100g"]);
@@ -22,7 +30,7 @@ function norm(p) {
     name,
     brand: String(p.brands || "").split(",")[0].trim(),
     quantity: String(p.quantity || "").trim(),
-    packG: num(p.product_quantity),
+    packG: num(p.product_quantity) ?? packFrom(p.quantity),
     serving: String(p.serving_size || "").trim(),
     servingG: num(p.serving_quantity),
     ml: unitMl,
